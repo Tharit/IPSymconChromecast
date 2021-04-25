@@ -1,5 +1,7 @@
 <?php
 
+require_once(__DIR__ . '/../libs/protobuf.php');
+
 class ChromecastDevice extends IPSModule
 {
  
@@ -18,6 +20,9 @@ class ChromecastDevice extends IPSModule
         $this->RegisterPropertyString('type', '');
         $this->RegisterPropertyString('ip', '');
         $this->RegisterPropertyString('port', '');
+
+        // register for socket status notifications
+        $this->RegisterMessage($this->GetParent(), IM_CHANGESTATUS);
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
@@ -28,17 +33,8 @@ class ChromecastDevice extends IPSModule
         switch ($Message) {
             case IM_CHANGESTATUS:
                 if ($Data[0] === IS_ACTIVE) {
-                    $this->ApplyChanges();
+                    $this->getStatus();
                 }
-                break;
-
-            case IPS_KERNELMESSAGE:
-                if ($Data[0] === KR_READY) {
-                    $this->ApplyChanges();
-                }
-                break;
-            case IPS_KERNELSTARTED:
-                $this->WriteAttributeString('devices', json_encode($this->DiscoverDevices()));
                 break;
 
             default:
@@ -49,5 +45,16 @@ class ChromecastDevice extends IPSModule
     public function ReceiveData($data)
     {
         $this->SendDebug('Data', $data, 0);
+    }
+
+    private function getStatus() {
+        $c = new CastMessage();
+		$c->source_id = "sender-0";
+		$c->receiver_id = "receiver-0";
+		$c->urnnamespace = "urn:x-cast:com.google.cast.receiver";
+		$c->payloadtype = 0;
+		$c->payloadutf8 = '{"type":"GET_STATUS","requestId":0}';
+
+        $this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => $c->encode()]));
     }
 }
