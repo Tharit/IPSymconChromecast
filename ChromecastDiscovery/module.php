@@ -480,6 +480,6 @@ class ChromecastDiscovery extends IPSModule
             $this->SendDebug('port:', $device['port'], 0);
         }
 
-        return $harmony_info;
+        return $chromecast_info;
     }
 }
