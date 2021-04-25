@@ -55,7 +55,7 @@ class ChromecastDevice extends IPSModule
     }
 
     private function UpdateParent() {
-        $newParentID = IPS_GetParent($this->InstanceID);
+        $newParentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
         
         $this->LogMessage($newParentID . '|' . $this->ParentID, KL_NOTIFY);
         
