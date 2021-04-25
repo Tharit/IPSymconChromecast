@@ -24,8 +24,8 @@ class ChromecastDevice extends IPSModule
 
         // register for socket status notifications
         $this->UpdateParent();
-        $this->RegisterMessage(0, FM_CONNECT);
-        $this->RegisterMessage(0, FM_DISCONNECT);
+        $this->RegisterMessage($this->InstanceID, FM_CONNECT);
+        $this->RegisterMessage($this->InstanceID, FM_DISCONNECT);
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
