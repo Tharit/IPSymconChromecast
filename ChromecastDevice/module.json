@@ -1,0 +1,15 @@
+{
+	"id": "{F250ACBC-6C4A-4699-80D7-C3121E5E80D3}",
+	"name": "ChromecastDevice",
+	"type": 3,
+	"vendor": "Google",
+	"aliases": 
+	[
+		"Google Chromecast Device"
+	],
+	"parentRequirements": [],
+	"childRequirements": [],
+	"implemented": [],
+	"prefix": "ChromecastDevice",
+    "url": "https://github.com/thart/IPSymconChromecast"
+}

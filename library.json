@@ -1,0 +1,12 @@
+{
+    "id": "{4456106D-D8B4-CE96-C506-2AA5B2426AD9}",
+    "name": "Chromecast",
+    "author": "Martin Kleinhans",
+    "url": "https://github.com/thart/IPSymconChromecast",
+    "compatibility": {
+        "version": "5.5"
+    },
+    "version": "1.0",
+    "build": 1,
+    "date": 25
+}

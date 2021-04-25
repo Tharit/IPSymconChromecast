@@ -1,0 +1,15 @@
+{
+	"id": "{BFEA3BBC-0DCE-4876-A96A-52E2D2814254}",
+	"name": "ChromecastDiscovery",
+	"type": 5,
+	"vendor": "Google",
+	"aliases": 
+	[
+		"Google Chromecast Discovery"
+	],
+	"parentRequirements": [],
+	"childRequirements": [],
+	"implemented": [],
+	"prefix": "ChromecastDiscovery",
+    "url": "https://github.com/thart/IPSymconChromecast"
+}
