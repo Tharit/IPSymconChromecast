@@ -22,7 +22,7 @@ class ChromecastDevice extends IPSModule
         $this->RegisterPropertyString('port', '');
 
         // register for socket status notifications
-        $this->RegisterMessage($this->GetParent(), IM_CHANGESTATUS);
+        $this->RegisterMessage(IPS_GetParent($this->InstanceID), IM_CHANGESTATUS);
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
