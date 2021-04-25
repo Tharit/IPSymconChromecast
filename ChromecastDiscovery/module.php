@@ -2,7 +2,7 @@
 
 require_once (__DIR__ . "/../libs/mdns.php");
 
-class ChromecastDiscover extends IPSModule
+class ChromecastDiscovery extends IPSModule
 {
     public function Create()
     {
