@@ -52,7 +52,7 @@ class ChromecastDevice extends IPSModule
 
     public function ReceiveData($data)
     {
-        $this->SendDebug('Data', $data, 0);
+        $this->SendDebug('Data', utf8_decode($data), 0);
     }
 
     private function UpdateParent() {
@@ -77,7 +77,7 @@ class ChromecastDevice extends IPSModule
 		$c->urnnamespace = "urn:x-cast:com.google.cast.tp.connection";
 		$c->payloadtype = 0;
 		$c->payloadutf8 = '{"type":"CONNECT"}';
-        $this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => $c->encode()]));
+        $this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => utf8_encode($c->encode())]));
     }
 
     private function getCastStatus() {
@@ -88,6 +88,6 @@ class ChromecastDevice extends IPSModule
 		$c->payloadtype = 0;
 		$c->payloadutf8 = '{"type":"GET_STATUS","requestId":0}';
 
-        $this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => $c->encode()]));
+        $this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => utf8_encode($c->encode())]));
     }
 }
