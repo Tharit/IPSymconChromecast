@@ -73,7 +73,7 @@ class ChromecastDevice extends IPSModule
     private function connect() {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
-		$c->receiver_id = $this->transportid;
+		$c->receiver_id = "receiver-0";
 		$c->urnnamespace = "urn:x-cast:com.google.cast.tp.connection";
 		$c->payloadtype = 0;
 		$c->payloadutf8 = '{"type":"CONNECT"}';
