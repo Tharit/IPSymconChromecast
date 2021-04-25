@@ -199,7 +199,7 @@ class ChromecastDiscovery extends IPSModule
                     'name'       => $device['name'],
                     'ip'         => $device['ip'],
                     'port'       => $device['port'],
-                    'type'       => $device['type']
+                    'type'       => $device['type'],
                     'create'     => [
                         [
                             'moduleID'      => '{F250ACBC-6C4A-4699-80D7-C3121E5E80D3}',
