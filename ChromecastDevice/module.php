@@ -4,7 +4,8 @@ require_once(__DIR__ . '/../libs/protobuf.php');
 
 class ChromecastDevice extends IPSModule
 {
- 
+    protected $ParentID;
+
     public function Create()
     {
         //Never delete this line!
@@ -22,25 +23,18 @@ class ChromecastDevice extends IPSModule
         $this->RegisterPropertyString('port', '');
 
         // register for socket status notifications
-        $this->RegisterMessage ( $this->InstanceID, FM_CONNECT );
-		$this->RegisterMessage ( $this->InstanceID, FM_DISCONNECT );
-        
-        $ParentID = IPS_GetParent($this->InstanceID);
-        if($ParentID > 0) {
-            $this->RegisterMessage(IPS_GetParent($this->InstanceID), IM_CHANGESTATUS);
-        }
+        $this->UpdateParent();
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
     {
         
-        $this->SendDebug('Sink', $TimeStamp, $SenderID, $Message, $Data);
+        $this->SendDebug('Sink', $TimeStamp . "|" . $SenderID . "|" . $Message . "|" . $Data, 0);
 
         switch ($Message) {
-            case FM_CONNECT:
-                $this->RegisterMessage(IPS_GetParent($this->InstanceID), IM_CHANGESTATUS);
-                break;
+            case FM_CONNECT: 
             case FM_DISCONNECT:
+                $this->UpdateParent();
                 break;
             case IM_CHANGESTATUS:
                 if ($Data[0] === IS_ACTIVE) {
@@ -56,6 +50,18 @@ class ChromecastDevice extends IPSModule
     public function ReceiveData($data)
     {
         $this->SendDebug('Data', $data, 0);
+    }
+
+    private function UpdateParent() {
+        $newParentID = IPS_GetParent($this->InstanceID);
+        if($newParentID == $this->ParentID) return;
+
+        if($this->ParentID) {
+            $this->UnregisterMessage($this->ParentID, IM_CHANGESTATUS);
+        }
+
+        $this->ParentID = $newParentID;
+        $this->RegisterMessage($this->ParentID, IM_CHANGESTATUS);
     }
 
     private function getCastStatus() {
