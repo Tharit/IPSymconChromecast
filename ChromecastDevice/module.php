@@ -33,7 +33,7 @@ class ChromecastDevice extends IPSModule
         switch ($Message) {
             case IM_CHANGESTATUS:
                 if ($Data[0] === IS_ACTIVE) {
-                    $this->getStatus();
+                    $this->getCastStatus();
                 }
                 break;
 
@@ -47,7 +47,7 @@ class ChromecastDevice extends IPSModule
         $this->SendDebug('Data', $data, 0);
     }
 
-    private function getStatus() {
+    private function getCastStatus() {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
 		$c->receiver_id = "receiver-0";
