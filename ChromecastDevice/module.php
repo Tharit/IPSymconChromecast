@@ -31,7 +31,7 @@ class ChromecastDevice extends IPSModule
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
     {
         
-        $this->SendDebug('Sink', $TimeStamp . "|" . $SenderID . "|" . $Message . "|" . $Data, 0);
+        $this->SendDebug('Sink', strval($TimeStamp) . "|" . strval($SenderID) . "|" . strval($Message) . "|" . strval($Data), 0);
 
         switch ($Message) {
             case FM_CONNECT: 
