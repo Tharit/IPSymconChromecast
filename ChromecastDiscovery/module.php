@@ -183,12 +183,8 @@ class ChromecastDiscovery extends IPSModule
         if (!empty($devices)) {
             foreach ($devices as $device) {
                 $instanceID = 0;
-                $uuid = $device['uuid'];
-                $name = $device['name'];
-                $ip = $device['ip'];
-                $port = $device['port'];
                 foreach ($DeviceIdList as $DeviceId) {
-                    if ($uuid == IPS_GetProperty($DeviceId, 'uuid')) {
+                    if ($device['uuid'] == IPS_GetProperty($DeviceId, 'uuid')) {
                         $device_name = IPS_GetName($DeviceId);
                         $this->SendDebug(
                             'Chromecast Discovery', 'device found: ' . utf8_decode($device_name) . ' (' . $DeviceId . ')', 0
@@ -199,26 +195,27 @@ class ChromecastDiscovery extends IPSModule
 
                 $config_list[] = [
                     'instanceID' => $instanceID,
-                    'uuid'       => $uuid,
-                    'name'       => $name,
-                    'ip'       => $ip,
-                    'port'       => $port,
+                    'uuid'       => $device['uuid'],
+                    'name'       => $device['name'],
+                    'ip'         => $device['ip'],
+                    'port'       => $device['port'],
+                    'type'       => $device['type']
                     'create'     => [
                         [
                             'moduleID'      => '{F250ACBC-6C4A-4699-80D7-C3121E5E80D3}',
                             'configuration' => [
-                                'uuid' => $uuid,
-                                'name' => $name,
-                                'type' => $type,
-                                'ip' => $ip,
-                                'port' => $port, 
+                                'uuid'       => $device['uuid'],
+                                'name'       => $device['name'],
+                                'ip'         => $device['ip'],
+                                'port'       => $device['port'],
+                                'type'       => $device['type'] 
                             ], 
                         ],
                         [
                             'moduleID'      => '{3CFF0FD9-E306-41DB-9B5A-9D06D38576C3}',
                             'configuration' => [
-                                'Host' => $ip,
-                                'Port' => $port,
+                                'Host' => $device['ip'],
+                                'Port' => $device['port'],
                                 'Open' => true, 
                             ], 
                         ], 
