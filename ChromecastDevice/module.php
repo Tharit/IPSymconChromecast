@@ -77,7 +77,7 @@ class ChromecastDevice extends IPSModule
 		$c->urnnamespace = "urn:x-cast:com.google.cast.tp.connection";
 		$c->payloadtype = 0;
 		$c->payloadutf8 = '{"type":"CONNECT"}';
-        CSCK_SendText($this->ParentID, $c->encode());
+        CSCK_SendText(IPS_GetInstance($this->InstanceID)['ConnectionID'], $c->encode());
         //$this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => utf8_encode($c->encode())]));
     }
 
@@ -89,7 +89,7 @@ class ChromecastDevice extends IPSModule
 		$c->payloadtype = 0;
 		$c->payloadutf8 = '{"type":"GET_STATUS","requestId":0}';
 
-        CSCK_SendText($this->ParentID, $c->encode());
+        CSCK_SendText(IPS_GetInstance($this->InstanceID)['ConnectionID'], $c->encode());
         //$this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => utf8_encode($c->encode())]));
     }
 }
