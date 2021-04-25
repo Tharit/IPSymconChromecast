@@ -83,8 +83,6 @@ class ChromecastDiscovery extends IPSModule
                 'actions'  => $this->FormActions(),
                 'status'   => $this->FormStatus(), ]
         );
-        $this->SendDebug('FORM', $Form, 0);
-        $this->SendDebug('FORM', json_last_error_msg(), 0);
 
         return $Form;
     }
