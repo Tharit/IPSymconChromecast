@@ -241,7 +241,7 @@ class ChromecastDiscovery extends IPSModule
                 $deviceInfos = ZC_QueryService($ids[0], $device['Name'], '_googlecast._tcp.', 'local.');
                 if (!empty($deviceInfos)) {
                     foreach ($deviceInfos as $info) {
-                        data['port'] = $info['Port'];
+                        $data['port'] = $info['Port'];
                         if (empty($info['IPv4'])) {
                             $data['ip'] = $info['IPv6'][0];
                         } else {
