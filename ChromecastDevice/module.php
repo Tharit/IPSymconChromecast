@@ -48,6 +48,6 @@ class ChromecastDevice extends IPSModule
 
     public function ReceiveData($data)
     {
-        $this->SendDebug('Data', $data);
+        $this->SendDebug('Data', $data, 0);
     }
 }
