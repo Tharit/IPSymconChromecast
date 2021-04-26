@@ -36,7 +36,7 @@ trait ModuleUtilities {
             $this->RegisterMessage($newParentID, IM_CHANGESTATUS);
         }
     
-        return $this->newParentID > 0;
+        return $newParentID > 0;
     }
 
     protected function GetConnectionID() {
