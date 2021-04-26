@@ -121,9 +121,17 @@ class ChromecastDevice extends IPSModule
 		$c->receiver_id = "receiver-0";
 		$c->urnnamespace = "urn:x-cast:com.google.cast.receiver";
 		$c->payloadtype = 0;
-		$c->payloadutf8 = '{"type":"GET_STATUS", "requestId":' . ($this->RequestID++) . '}';
+		$c->payloadutf8 = '{"type":"GET_STATUS", "requestId":' . ($this->GetRequestID()) . '}';
 
         CSCK_SendText($this->GetConnectionID(), $c->encode());
         //$this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => utf8_encode($c->encode())]));
+    }
+
+    private function GetRequestID() {
+        $requestId = $this->MUGetBuffer('RequestID');
+        if($requestId == "") $requestId = 0;
+        $requestId++;
+        $this->MUSetBuffer("RequestID", $requestId);
+        return $requestId;
     }
 }
