@@ -112,7 +112,14 @@ class ChromecastDevice extends IPSModule
         $data = json_decode($data);
         $data = utf8_decode($data->Buffer);
 
-        $this->SendDebug('Data', $data, 0);
+        try {
+            $c = new CastMessage();
+            $c->decode($data);
+        } catch (Exception $e) {
+            return;
+        }
+        
+        $this->SendDebug('Data', print_r($c, true), 0);
     }
 
     //------------------------------------------------------------------------------------
@@ -121,10 +128,10 @@ class ChromecastDevice extends IPSModule
     private function Connect() {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
-		$c->receiver_id = "receiver-0";
-		$c->urnnamespace = "urn:x-cast:com.google.cast.tp.connection";
-		$c->payloadtype = 0;
-		$c->payloadutf8 = '{"type":"CONNECT"}';
+		$c->destination_id = "receiver-0";
+		$c->namespace = "urn:x-cast:com.google.cast.tp.connection";
+		$c->payload_type = 0;
+		$c->payload_utf8 = '{"type":"CONNECT"}';
         CSCK_SendText($this->GetConnectionID(), $c->encode());
 
         $this->RequestCastStatus();
@@ -133,10 +140,10 @@ class ChromecastDevice extends IPSModule
     private function RequestCastStatus() {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
-		$c->receiver_id = "receiver-0";
-		$c->urnnamespace = "urn:x-cast:com.google.cast.receiver";
-		$c->payloadtype = 0;
-		$c->payloadutf8 = '{"type":"GET_STATUS", "requestId":' . ($this->GetRequestID()) . '}';
+		$c->destination_id = "receiver-0";
+		$c->namespace = "urn:x-cast:com.google.cast.receiver";
+		$c->payload_type = 0;
+		$c->payload_utf8 = '{"type":"GET_STATUS", "requestId":' . ($this->GetRequestID()) . '}';
 
         CSCK_SendText($this->GetConnectionID(), $c->encode());
     }

@@ -4,12 +4,23 @@
 
 class CastMessage {
 
-	public $protocolversion = 0; // CASTV2_1_0 - It's always this
-	public $source_id; // Source ID String
-	public $receiver_id; // Receiver ID String
-	public $urnnamespace; // Namespace
-	public $payloadtype = 0; // PayloadType String=0 Binary = 1
-	public $payloadutf8; // Payload
+	private static $fieldMap = [
+		1 => 'protocol_version',
+		2 => 'source_id',
+		3 => 'destination_id',
+		4 => 'namespace',
+		5 => 'payload_type',
+		6 => 'payload_utf8',
+		7 => 'payload_binary'
+	];
+
+	public $protocol_version = 0; // CASTV2_1_0 - It's always this
+	public $source_id = ""; // Source ID String
+	public $destination_id = ""; // Receiver ID String
+	public $namespace = ""; // Namespace
+	public $payload_type = 0; // PayloadType String=0 Binary = 1
+	public $payload_utf8 = ""; // Payload String
+	public $payload_binary = ""; // Payload Binary
 
 	public function encode() {
 
@@ -21,7 +32,7 @@ class CastMessage {
 		$r = "00001"; // Field Number 1
 		$r .= "000"; // Int
 		// Value is always 0
-		$r .= $this->varintToBin($this->protocolversion);
+		$r .= $this->varintToBin($this->protocol_version);
 
 		// Now the Source id
 		$r .= "00010"; // Field Number 2
@@ -31,22 +42,22 @@ class CastMessage {
 		// Now the Receiver id
 		$r .= "00011"; // Field Number 3
 		$r .= "010"; // String
-		$r .= $this->stringToBin($this->receiver_id);
+		$r .= $this->stringToBin($this->destination_id);
 
 		// Now the namespace
 		$r .= "00100"; // Field Number 4
 		$r .= "010"; // String
-		$r .= $this->stringToBin($this->urnnamespace);
+		$r .= $this->stringToBin($this->namespace);
 
 		// Now the payload type
 		$r .= "00101"; // Field Number 5
 		$r .= "000"; // VarInt
-		$r .= $this->varintToBin($this->payloadtype);
+		$r .= $this->varintToBin($this->payload_type);
 
 		// Now payloadutf8
 		$r .= "00110"; // Field Number 6
 		$r .= "010"; // String
-		$r .= $this->stringToBin($this->payloadutf8);
+		$r .= $this->stringToBin($this->payload_utf8);
 		
 		// Ignore payload_binary field 7 as never used
 
@@ -63,6 +74,59 @@ class CastMessage {
 		while (strlen($l) < 8) { $l = "0" . $l; }
 		$hexstring = $l . $hexstring;
 		return hex2bin($hexstring);
+	}
+
+	public function decode($message) {
+		$this->protocol_version = 0; // CASTV2_1_0 - It's always this
+		$this->source_id = ""; // Source ID String
+		$this->destination_id = ""; // Receiver ID String
+		$this->namespace = ""; // Namespace
+		$this->payload_type = 0; // PayloadType String=0 Binary = 1
+		$this->payload_utf8 = ""; // Payload String
+		$this->payload_binary = ""; // Payload Binary
+
+		if(strlen($message) < 4) {
+			throw new Exception("Message too short");
+		}
+
+		$idx = 4;
+		$messageLen = unpack("N", $message)[1];
+
+		while($idx < $messageLen) {
+			$v = $this->readvarint($message, $idx);
+			$type = ($v & 0x07);
+			$field = $v >> 3;
+
+			if(!isset(CastMessage::$fieldMap[$field])) {
+				throw new Exception("Encountered unknown field: " . $field);
+			}
+			if($type === 0) {
+				$value = $this->readvarint($message, $idx);
+			} else if($type === 2) {
+				$len = $this->readvarint($message, $idx);
+				$value = substr($message, $idx, $len);
+				$idx += $len;
+			} else {
+				throw new Exception("Encounterd unimplemented field type: " . $type);
+			}
+			$this->{CastMessage::$fieldMap[$field]} = $value;
+		}
+	}
+
+	private function readvarint($message, &$idx) {
+		$bytes = [];
+		do {
+			$b = ord($message[$idx++]);
+			$continue = ($b & 0x80);
+			$bytes[] = ($b & 0x7f);
+		} while($continue);
+		$res = 0;
+		$factor = 1;
+		for($i = 0; $i < count($bytes); $i++) {
+			$res += $bytes[$i] * $factor;
+			$factor *= 128;
+		}
+		return $res;
 	}
 
 	private function varintToBin($inval) {
