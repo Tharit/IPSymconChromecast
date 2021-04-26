@@ -9,7 +9,7 @@ trait ModuleUtilities {
     }
     protected function MUGetBuffer($Name)
     {
-        return unserialize(this->GetBuffer($Name));
+        return unserialize($this->GetBuffer($Name));
     }
     protected function UpdateConnection() {
         // parent is not available until kernel finished starting
