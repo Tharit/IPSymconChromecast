@@ -118,8 +118,13 @@ class ChromecastDevice extends IPSModule
         } catch (Exception $e) {
             return;
         }
-        
-        $this->SendDebug('Data', print_r($c, true), 0);
+
+        if($c->payload_type === 0) {
+            $data = json_decode($c->payload_utf8);
+            $this->SendDebug('JSON Data', print_r($data, true), 0);
+        } else {
+            $this->SendDebug('Binary Data', print_r($c->payload_binary, true), 0);
+        }
     }
 
     //------------------------------------------------------------------------------------
