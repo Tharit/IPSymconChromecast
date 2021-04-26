@@ -69,7 +69,9 @@ class ChromecastDevice extends IPSModule
         $this->RegisterMessage($this->InstanceID, FM_DISCONNECT);
 
         // if this is not the initial creation there might already be a parent
-        $this->UpdateConnection();
+        if($this->UpdateConnection() && $this->HasActiveParent()) {
+            $this->Connect();
+        }
     }
 
     /**
