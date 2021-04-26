@@ -31,6 +31,10 @@ class ChromecastDevice extends IPSModule
     {
         parent::ApplyChanges();
 
+        IPS_LogMessage("ApplyChanges", "Message from SenderID ".$SenderID." with Message ".$Message."\r\n Data: ".print_r($Data, true));
+
+        $this->UpdateParent();
+        
         $this->RegisterMessage(0, IPS_KERNELSTARTED);
         $this->RegisterMessage($this->InstanceID, FM_CONNECT);
         $this->RegisterMessage($this->InstanceID, FM_DISCONNECT);
