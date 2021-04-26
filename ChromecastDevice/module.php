@@ -7,14 +7,16 @@ trait ModuleUtilities {
     {
         $this->SetBuffer($Name, serialize($Daten));
     }
+
     protected function MUGetBuffer($Name)
     {
         return unserialize($this->GetBuffer($Name));
     }
+
     protected function UpdateConnection() {
         // parent is not available until kernel finished starting
         if (IPS_GetKernelRunlevel() !== KR_READY) {
-            return;
+            return false;
         }
 
         $newParentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
@@ -22,15 +24,21 @@ trait ModuleUtilities {
 
         $this->LogMessage($newParentID . '|' . $oldParentID, KL_NOTIFY);
         
-        if($newParentID === $oldParentID) return;
+        if($newParentID === $oldParentID) return false;
 
         if($oldParentID) {
             $this->UnregisterMessage($oldParentID, IM_CHANGESTATUS);
         }
 
         $this->MUSetBuffer('ConnectionID', $newParentID);
-        $this->RegisterMessage($newParentID, IM_CHANGESTATUS);
+        
+        if($newParentID) {
+            $this->RegisterMessage($newParentID, IM_CHANGESTATUS);
+        }
+    
+        return $this->newParentID > 0;
     }
+
     protected function GetConnectionID() {
         return $this->MUGetBuffer('ConnectionID');
     }
@@ -78,17 +86,18 @@ class ChromecastDevice extends IPSModule
 
         switch ($Message) {
             case IPS_KERNELSTARTED:
-                $this->UpdateConnection();
-                break;
             case FM_CONNECT:
-
+                // if new parent and it is already active: connect immediately
+                if($this->UpdateConnection() && $this->HasActiveParent()) {
+                    $this->Connect();
+                }
             case FM_DISCONNECT:
                 $this->UpdateConnection();
                 break;
             case IM_CHANGESTATUS:
+                // if parent became active: connect
                 if ($Data[0] === IS_ACTIVE) {
-                    $this->connect();
-                    $this->getCastStatus();
+                    $this->Connect();
                 }
                 break;
             default:
@@ -104,7 +113,10 @@ class ChromecastDevice extends IPSModule
         $this->SendDebug('Data', $data, 0);
     }
 
-    private function connect() {
+    //------------------------------------------------------------------------------------
+    // module internals
+    //------------------------------------------------------------------------------------
+    private function Connect() {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
 		$c->receiver_id = "receiver-0";
@@ -112,10 +124,11 @@ class ChromecastDevice extends IPSModule
 		$c->payloadtype = 0;
 		$c->payloadutf8 = '{"type":"CONNECT"}';
         CSCK_SendText($this->GetConnectionID(), $c->encode());
-        //$this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => utf8_encode($c->encode())]));
+
+        $this->RequestCastStatus();
     }
 
-    private function getCastStatus() {
+    private function RequestCastStatus() {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
 		$c->receiver_id = "receiver-0";
@@ -124,7 +137,6 @@ class ChromecastDevice extends IPSModule
 		$c->payloadutf8 = '{"type":"GET_STATUS", "requestId":' . ($this->GetRequestID()) . '}';
 
         CSCK_SendText($this->GetConnectionID(), $c->encode());
-        //$this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => utf8_encode($c->encode())]));
     }
 
     private function GetRequestID() {
