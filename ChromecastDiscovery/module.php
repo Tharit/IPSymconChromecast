@@ -60,9 +60,11 @@ class ChromecastDiscovery extends IPSModule
     public function Discover()
     {
         $this->LogMessage($this->Translate('Background Discovery of Chromecast devices'), KL_NOTIFY);
-        $this->WriteAttributeString('devices', json_encode($this->DiscoverDevices()));
 
-        return json_encode($this->DiscoverDevices());
+        $devices = json_encode($this->DiscoverDevices());
+        $this->WriteAttributeString('devices', $devices);
+
+        return $devices;
     }
 
     /*
@@ -215,6 +217,9 @@ class ChromecastDiscovery extends IPSModule
                                 'Host' => $device['ip'],
                                 'Port' => $device['port'],
                                 'Open' => true, 
+                                'UseSSL' => true,
+                                'VerifyPeer' => false,
+                                'VerifyHost' => false
                             ], 
                         ], 
                     ], 

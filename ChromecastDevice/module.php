@@ -4,7 +4,8 @@ require_once(__DIR__ . '/../libs/protobuf.php');
 
 class ChromecastDevice extends IPSModule
 {
-    protected $ParentID;
+    protected $ParentID = 0;
+    protected $RequestID = 0;
 
     public function Create()
     {
@@ -21,19 +22,29 @@ class ChromecastDevice extends IPSModule
         $this->RegisterPropertyString('type', '');
         $this->RegisterPropertyString('ip', '');
         $this->RegisterPropertyString('port', '');
+    }
 
-        // register for socket status notifications
-        $this->UpdateParent();
+    /**
+     * Interne Funktion des SDK.
+     */
+    public function ApplyChanges()
+    {
+        parent::ApplyChanges();
+
+        $this->RegisterMessage(0, IPS_KERNELSTARTED);
         $this->RegisterMessage($this->InstanceID, FM_CONNECT);
         $this->RegisterMessage($this->InstanceID, FM_DISCONNECT);
+        $this->ParentID = 0;
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
     {
-        
         IPS_LogMessage("MessageSink", "Message from SenderID ".$SenderID." with Message ".$Message."\r\n Data: ".print_r($Data, true));
 
         switch ($Message) {
+            case IPS_KERNELSTARTED:
+                $this->UpdateParent();
+                break;
             case FM_CONNECT: 
             case FM_DISCONNECT:
                 $this->UpdateParent();
@@ -44,7 +55,6 @@ class ChromecastDevice extends IPSModule
                     $this->getCastStatus();
                 }
                 break;
-
             default:
                 break;
         }
@@ -52,7 +62,10 @@ class ChromecastDevice extends IPSModule
 
     public function ReceiveData($data)
     {
-        $this->SendDebug('Data', utf8_decode($data), 0);
+        $data = json_decode($data);
+        $data = utf8_decode($data->Buffer);
+
+        $this->SendDebug('Data', $data, 0);
     }
 
     private function UpdateParent() {
@@ -77,7 +90,7 @@ class ChromecastDevice extends IPSModule
 		$c->urnnamespace = "urn:x-cast:com.google.cast.tp.connection";
 		$c->payloadtype = 0;
 		$c->payloadutf8 = '{"type":"CONNECT"}';
-        CSCK_SendText(IPS_GetInstance($this->InstanceID)['ConnectionID'], $c->encode());
+        CSCK_SendText($this->ParentID, $c->encode());
         //$this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => utf8_encode($c->encode())]));
     }
 
@@ -87,9 +100,9 @@ class ChromecastDevice extends IPSModule
 		$c->receiver_id = "receiver-0";
 		$c->urnnamespace = "urn:x-cast:com.google.cast.receiver";
 		$c->payloadtype = 0;
-		$c->payloadutf8 = '{"type":"GET_STATUS","requestId":0}';
+		$c->payloadutf8 = '{"type":"GET_STATUS", "requestId":' . ($this->RequestID++) . '}';
 
-        CSCK_SendText(IPS_GetInstance($this->InstanceID)['ConnectionID'], $c->encode());
+        CSCK_SendText($this->ParentID, $c->encode());
         //$this->SendDataToParent(json_encode(['DataID' => '{79827379-F36E-4ADA-8A95-5F8D1DC92FA9}', 'Buffer' => utf8_encode($c->encode())]));
     }
 }
