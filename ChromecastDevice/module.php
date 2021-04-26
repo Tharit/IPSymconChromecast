@@ -23,21 +23,20 @@ class ChromecastDevice extends IPSModule
         $this->RegisterPropertyString('ip', '');
         $this->RegisterPropertyString('port', '');
 
-        IPS_LogMessage("Startup", "test");
-
         $this->RegisterMessage(0, IPS_KERNELSTARTED);
         $this->RegisterMessage($this->InstanceID, FM_CONNECT);
         $this->RegisterMessage($this->InstanceID, FM_DISCONNECT);
+
+        // if this is not the initial creation there might already be a parent
+        $this->UpdateParent();
     }
 
     /**
-     * Interne Funktion des SDK.
+     * Configuration changes
      */
     public function ApplyChanges()
     {
         parent::ApplyChanges();
-
-        IPS_LogMessage("ApplyChanges", "Test");
     }
 
     public function MessageSink($TimeStamp, $SenderID, $Message, $Data)
@@ -72,6 +71,11 @@ class ChromecastDevice extends IPSModule
     }
 
     private function UpdateParent() {
+        // parent is not available until kernel finished starting
+        if (IPS_GetKernelRunlevel() !== KR_READY) {
+            return;
+        }
+
         $newParentID = IPS_GetInstance($this->InstanceID)['ConnectionID'];
         
         $this->LogMessage($newParentID . '|' . $this->ParentID, KL_NOTIFY);
