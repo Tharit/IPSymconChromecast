@@ -36,6 +36,9 @@ class ChromecastDevice extends IPSModule
         $this->RegisterMessage($this->InstanceID, FM_CONNECT);
         $this->RegisterMessage($this->InstanceID, FM_DISCONNECT);
 
+        // clear state on startup
+        $this->ResetState();
+
         // if this is not the initial creation there might already be a parent
         if($this->UpdateConnection() && $this->HasActiveParent()) {
             $this->Connect();
@@ -66,13 +69,7 @@ class ChromecastDevice extends IPSModule
                 break;
             case IM_CHANGESTATUS:
                 // reset state
-                $this->SetValue("ActiveApplication", '');
-                $this->SetValue("MediaTitle", '');
-                $this->SetValue("MediaState", '');
-                $this->MUSetBuffer('SessionId', '');
-                $this->MUSetBuffer('TransportId', '');
-                $this->MUSetBuffer('SessionId', '');
-                $this->MUSetBuffer('MediaSessionId', '');
+                $this->ResetState();
 
                 // if parent became active: connect
                 if ($Data[0] === IS_ACTIVE) {
@@ -141,9 +138,7 @@ class ChromecastDevice extends IPSModule
                             }
                         }
                     } else if(!empty($oldActiveApplication)) {
-                        $this->SetValue("ActiveApplication", "");
-                        $this->MUSetBuffer('TransportId', '');
-                        $this->MUSetBuffer('SessionId', '');
+                        $this->ResetState();
                     }
                 }
             // media
@@ -249,6 +244,17 @@ class ChromecastDevice extends IPSModule
     //------------------------------------------------------------------------------------
     // module internals
     //------------------------------------------------------------------------------------
+    private function ResetState() {
+        // reset state
+        $this->SetValue("ActiveApplication", '');
+        $this->SetValue("MediaTitle", '');
+        $this->SetValue("MediaState", '');
+        $this->MUSetBuffer('SessionId', '');
+        $this->MUSetBuffer('TransportId', '');
+        $this->MUSetBuffer('SessionId', '');
+        $this->MUSetBuffer('MediaSessionId', '');
+    }
+
     private function SetVolume($volume) {
         $volume = max(min(1, $volume), 0);
         $c = new CastMessage();
