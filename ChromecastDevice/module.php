@@ -65,6 +65,14 @@ class ChromecastDevice extends IPSModule
                 $this->UpdateConnection();
                 break;
             case IM_CHANGESTATUS:
+                // reset state
+                $this->SetValue("ActiveApplication", '');
+                $this->SetValue("MediaTitle", '');
+                $this->SetValue("MediaState", '');
+                $this->MUSetBuffer('SessionId', '');
+                $this->MUSetBuffer('TransportId', '');
+                $this->MUSetBuffer('SessionId', '');
+
                 // if parent became active: connect
                 if ($Data[0] === IS_ACTIVE) {
                     $this->Connect();
