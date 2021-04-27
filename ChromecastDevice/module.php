@@ -160,8 +160,8 @@ class ChromecastDevice extends IPSModule
                         
                         $media = $status->media;
                         $newMediaTitle = $media->metadata->title;
-                        if(isset($status->media->artist)) {
-                            $newMediaTitle .= ' - ' . $status->media->metadata->artist;
+                        if(isset($media->metadata->artist)) {
+                            $newMediaTitle .= ' - ' . $media->metadata->artist;
                         }
 
                         if($oldMediaTitle != $newMediaTitle) {
@@ -274,7 +274,7 @@ class ChromecastDevice extends IPSModule
 		$c->payload_type = 0;
 		$c->payload_utf8 = '{"type":"'.$command.'", ';
         if(!empty($mediaSessionId)) {
-            $c->payload_utf8 .= '"mediaSessionId":' . ($this->MUGetBuffer('mediaSessionId')) . ', ';
+            $c->payload_utf8 .= '"mediaSessionId":' . $mediaSessionId . ', ';
         }
         $c->payload_utf8 .= '"requestId":' . ($this->GetRequestID()) . '}';
 
