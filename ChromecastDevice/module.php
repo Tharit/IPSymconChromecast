@@ -86,20 +86,20 @@ class ChromecastDevice extends IPSModule
 
         if($c->payload_type === 0) {
             $data = json_decode($c->payload_utf8);
-            if($data['type'] === 'RECEIVER_STATUS') {
-                if(isset($data['volume'])) {
-                    $this->SetValue("Volume", $data['volume']['level']);
+            if($data->type === 'RECEIVER_STATUS') {
+                if(isset($data->volume)) {
+                    $this->SetValue("Volume", $data->volume->level);
                 }
-                if(isset($data['applications']) && count($data['applications']) === 1) {
-                    $this->SetValue("ActiveApplication", $data['applications'][0]['displayName']);
-                    $this->MUSetBuffer('TransportId', $data['applications'][0]['transportId']);
-                    $this->MUSetBuffer('SessionId', $data['applications'][0]['sessionId']);
+                if(isset($data->applications) && count($data->applications) === 1) {
+                    $this->SetValue("ActiveApplication", $data->applications[0]->displayName);
+                    $this->MUSetBuffer('TransportId', $data->applications[0]->transportId);
+                    $this->MUSetBuffer('SessionId', $data->applications[0]->sessionId);
                 } else {
                     $this->SetValue("ActiveApplication", "");
                     $this->MUSetBuffer('TransportId', '');
                     $this->MUSetBuffer('SessionId', '');
                 }
-            } else if($data['type'] === 'PING') {
+            } else if($data->type === 'PING') {
                 $this->Pong();
             }
             $this->SendDebug('JSON Data', $c->namespace . '|' . print_r($data, true), 0);
