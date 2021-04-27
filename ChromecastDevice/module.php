@@ -128,7 +128,7 @@ class ChromecastDevice extends IPSModule
                             }
                             if($supportsMediaNS) {
                                 $this->connect($newSessionId);
-                                $this->RequestStatus($newSessionId);
+                                $this->SendMediaCommand("GET_STATUS");
                             }
                         }
                     } else if(!empty($oldActiveApplication)) {
@@ -140,7 +140,7 @@ class ChromecastDevice extends IPSModule
             // media
             } else if($c->namespace === 'urn:x-cast:com.google.cast.media') {
                 if($data->type === 'MEDIA_STATUS') {
-                    $this->MUSetBuffer('MediaSessionId', $dat->status->media->mediaSessionId);
+                    $this->MUSetBuffer('MediaSessionId', $data->status->media->mediaSessionId);
 
                     $oldMediaTitle = $this->GetValue("MediaTitle");
                     $newMediaTitle = $data->status->media->title;
@@ -207,14 +207,23 @@ class ChromecastDevice extends IPSModule
         CSCK_SendText($this->GetConnectionID(), $c->encode());
     }
 
-    private function SendMediaCommand($command) {
+    private function SendMediaCommand($command, $mediaSessionId = "") {
+        // media session id must be present for all commands except GET_STATUS
+        if(empty($mediaSessionId) && $command !== "GET_STATUS") {
+            return;
+        }
+    
         $volume = max(min(1, $volume), 0);
         $c = new CastMessage();
 		$c->source_id = "sender-0";
 		$c->destination_id = $this->MUGetBuffer('sessionId');
 		$c->namespace = "urn:x-cast:com.google.cast.receiver";
 		$c->payload_type = 0;
-		$c->payload_utf8 = '{"type":"'.$command.'", "MediaSessionId":' . ($this->MUGetBuffer('mediaSessionId')) . ', "requestId":' . ($this->GetRequestID()) . '}';
+		$c->payload_utf8 = '{"type":"'.$command.'", ';
+        if(!empty($mediaSessionId)) {
+            $c->payload_utf8 .= '"mediaSessionId":' . ($this->MUGetBuffer('mediaSessionId')) . ', ';
+        }
+        $c->payload_utf8 .= '"requestId":' . ($this->GetRequestID()) . '}';
 
         CSCK_SendText($this->GetConnectionID(), $c->encode());
     }
@@ -254,10 +263,10 @@ class ChromecastDevice extends IPSModule
         $this->RequestStatus();
     }
 
-    private function RequestStatus($destination_id = "") {
+    private function RequestStatus() {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
-		$c->destination_id = empty($destination_id) ? "receiver-0" : $destination_id;
+		$c->destination_id = "receiver-0";
 		$c->namespace = "urn:x-cast:com.google.cast.receiver";
 		$c->payload_type = 0;
 		$c->payload_utf8 = '{"type":"GET_STATUS", "requestId":' . ($this->GetRequestID()) . '}';
