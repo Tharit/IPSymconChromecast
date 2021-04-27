@@ -26,7 +26,7 @@ class ChromecastDevice extends IPSModule
 
         // variables
         $this->RegisterVariableString("ActiveApplication", "Active Application");
-        $this->RegisterVariableFloat("Volume", "Volume", "~Intensity");
+        $this->RegisterVariableFloat("Volume", "Volume", "~Intensity.1");
 
         // messages
         $this->RegisterMessage(0, IPS_KERNELSTARTED);
