@@ -149,17 +149,19 @@ class ChromecastDevice extends IPSModule
             // media
             } else if($c->namespace === 'urn:x-cast:com.google.cast.media') {
                 if($data->type === 'MEDIA_STATUS') {
-                    $this->MUSetBuffer('MediaSessionId', $data->status->mediaSessionId);
+                    $status = $data->status[0];
+
+                    $this->MUSetBuffer('MediaSessionId', $status->mediaSessionId);
 
                     // media information is only sent if it changed
-                    if(isset($data->status->media)) {
+                    if(isset($status->media)) {
                         $oldMediaTitle = $this->GetValue("MediaTitle");
                         $newMediaTitle = "";
                         
-                        $media = $data->status->media;
+                        $media = $status->media;
                         $newMediaTitle = $media->metadata->title;
-                        if(isset($data->status->media->artist)) {
-                            $newMediaTitle .= ' - ' . $data->status->media->metadata->artist;
+                        if(isset($status->media->artist)) {
+                            $newMediaTitle .= ' - ' . $status->media->metadata->artist;
                         }
 
                         if($oldMediaTitle != $newMediaTitle) {
@@ -168,7 +170,7 @@ class ChromecastDevice extends IPSModule
                     }
 
                     // update media state even when it does not change, so that the timestamp changes / it can be used as trigger
-                    $this->SetValue("MediaState", $data->status->playerState);
+                    $this->SetValue("MediaState", $status->playerState);
                 }
             }
 
