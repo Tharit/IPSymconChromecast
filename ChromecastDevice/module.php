@@ -125,7 +125,7 @@ class ChromecastDevice extends IPSModule
 		$c->destination_id = "receiver-0";
 		$c->namespace = "urn:x-cast:com.google.cast.receiver";
 		$c->payload_type = 0;
-		$c->payload_utf8 = '{"type":"STOP","requestId":' . ($this->GetRequestID()) . ',"sessionId":'.$sessionId.'}';
+		$c->payload_utf8 = '{"type":"STOP","requestId":' . ($this->GetRequestID()) . ',"sessionId":"'.$sessionId.'"}';
         CSCK_SendText($this->GetConnectionID(), $c->encode());
 
         return true;
