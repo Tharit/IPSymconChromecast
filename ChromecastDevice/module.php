@@ -213,7 +213,6 @@ class ChromecastDevice extends IPSModule
             return;
         }
     
-        $volume = max(min(1, $volume), 0);
         $c = new CastMessage();
 		$c->source_id = "sender-0";
 		$c->destination_id = $this->MUGetBuffer('sessionId');
