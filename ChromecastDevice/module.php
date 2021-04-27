@@ -127,8 +127,8 @@ class ChromecastDevice extends IPSModule
                                 }
                             }
                             if($supportsMediaNS) {
-                                $this->connect($sessionId);
-                                $this->RequestStatus($sessionId);
+                                $this->connect($newSessionId);
+                                $this->RequestStatus($newSessionId);
                             }
                         }
                     } else if(!empty($oldActiveApplication)) {
