@@ -87,13 +87,13 @@ class ChromecastDevice extends IPSModule
         if($c->payload_type === 0) {
             $data = json_decode($c->payload_utf8);
             if($data->type === 'RECEIVER_STATUS') {
-                if(isset($data->volume)) {
-                    $this->SetValue("Volume", $data->volume->level);
+                if(isset($data->status->volume)) {
+                    $this->SetValue("Volume", $data->status->volume->level);
                 }
-                if(isset($data->applications) && count($data->applications) === 1) {
-                    $this->SetValue("ActiveApplication", $data->applications[0]->displayName);
-                    $this->MUSetBuffer('TransportId', $data->applications[0]->transportId);
-                    $this->MUSetBuffer('SessionId', $data->applications[0]->sessionId);
+                if(isset($data->status->applications) && count($data->status->applications) === 1) {
+                    $this->SetValue("ActiveApplication", $data->status->applications[0]->displayName);
+                    $this->MUSetBuffer('TransportId', $data->status->applications[0]->transportId);
+                    $this->MUSetBuffer('SessionId', $data->status->applications[0]->sessionId);
                 } else {
                     $this->SetValue("ActiveApplication", "");
                     $this->MUSetBuffer('TransportId', '');
