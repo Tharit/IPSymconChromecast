@@ -27,6 +27,7 @@ class ChromecastDevice extends IPSModule
         // variables
         $this->RegisterVariableString("ActiveApplication", "Active Application");
         $this->RegisterVariableFloat("Volume", "Volume", "~Intensity.1");
+        $this->EnableAction("Volume");
 
         // messages
         $this->RegisterMessage(0, IPS_KERNELSTARTED);
@@ -110,7 +111,14 @@ class ChromecastDevice extends IPSModule
     
     public function RequestAction($ident, $value)
     {
-        // change volume
+        if($ident === 'Volume') {
+            $this->SetVolume($value);
+        }
+        /*
+        if($ident === 'Muted') {
+            $this->SetMute($value);
+        }
+        */
     }
 
     //------------------------------------------------------------------------------------
@@ -134,6 +142,30 @@ class ChromecastDevice extends IPSModule
     //------------------------------------------------------------------------------------
     // module internals
     //------------------------------------------------------------------------------------
+    private function SetVolume($volume) {
+        $volume = max(min(1, $volume), 0);
+        $c = new CastMessage();
+		$c->source_id = "sender-0";
+		$c->destination_id = "receiver-0";
+		$c->namespace = "urn:x-cast:com.google.cast.receiver";
+		$c->payload_type = 0;
+		$c->payload_utf8 = '{"type":"SET_VOLUME", "volume":{"level":'.$volume.'},"requestId":' . ($this->GetRequestID()) . '}';
+
+        CSCK_SendText($this->GetConnectionID(), $c->encode());
+    }
+    /*
+    private function SetMute($muted) {
+        $c = new CastMessage();
+		$c->source_id = "sender-0";
+		$c->destination_id = "receiver-0";
+		$c->namespace = "urn:x-cast:com.google.cast.receiver";
+		$c->payload_type = 0;
+		$c->payload_utf8 = '{"type":"SET_VOLUME", "volume":{"muted":'.($muted?'true':'false').'},"requestId":' . ($this->GetRequestID()) . '}';
+
+        CSCK_SendText($this->GetConnectionID(), $c->encode());
+    }
+    */
+    
     private function Pong() {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
