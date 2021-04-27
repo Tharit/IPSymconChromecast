@@ -223,8 +223,8 @@ class ChromecastDevice extends IPSModule
     
         $c = new CastMessage();
 		$c->source_id = "sender-0";
-		$c->destination_id = $this->MUGetBuffer('sessionId');
-		$c->namespace = "urn:x-cast:com.google.cast.receiver";
+		$c->destination_id = $this->MUGetBuffer('SessionId');
+		$c->namespace = "urn:x-cast:com.google.cast.media";
 		$c->payload_type = 0;
 		$c->payload_utf8 = '{"type":"'.$command.'", ';
         if(!empty($mediaSessionId)) {
