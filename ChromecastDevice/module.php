@@ -117,7 +117,7 @@ class ChromecastDevice extends IPSModule
     // external methods
     //------------------------------------------------------------------------------------
     public function Stop() {
-        $sessionId = $this->MUGetBuffer('sessionId');
+        $sessionId = $this->MUGetBuffer('SessionId');
         if(!$sessionId) return false;
     
         $c = new CastMessage();
