@@ -72,6 +72,7 @@ class ChromecastDevice extends IPSModule
                 $this->MUSetBuffer('SessionId', '');
                 $this->MUSetBuffer('TransportId', '');
                 $this->MUSetBuffer('SessionId', '');
+                $this->MUSetBuffer('MediaSessionId', '');
 
                 // if parent became active: connect
                 if ($Data[0] === IS_ACTIVE) {
@@ -151,16 +152,16 @@ class ChromecastDevice extends IPSModule
                     $this->MUSetBuffer('MediaSessionId', $data->status->media->mediaSessionId);
 
                     $oldMediaTitle = $this->GetValue("MediaTitle");
-                    $newMediaTitle = $data->status->media->title;
+                    $newMediaTitle = $data->status->media->metadata->title;
                     if(isset($data->status->media->artist)) {
-                        $newMediaTitle .= ' - ' . $data->status->media->artist;
+                        $newMediaTitle .= ' - ' . $data->status->media->metadata->artist;
                     }
                     if($oldMediaTitle != $newMediaTitle) {
                         $this->SetValue("MediaTitle", $newMediaTitle);
                     }
                     
                     // update media state even when it does not change, so that the timestamp changes / it can be used as trigger
-                    $this->SetValue("MediaState", $newMediaState);
+                    $this->SetValue("MediaState", $data->status->media->playerState);
                 }
             }
 
@@ -197,6 +198,42 @@ class ChromecastDevice extends IPSModule
 		$c->payload_utf8 = '{"type":"STOP","requestId":' . ($this->GetRequestID()) . ',"sessionId":"'.$sessionId.'"}';
         CSCK_SendText($this->GetConnectionID(), $c->encode());
 
+        return true;
+    }
+
+    public function Play() {
+        $mediaSessionId = $this->MUGetBuffer('MediaSessionId');
+        if(empty($mediaSessionId)) return false;
+
+        $this->SendMediaCommand('PLAY', $mediaSessionId);
+        
+        return true;
+    }
+
+    public function Pause() {
+        $mediaSessionId = $this->MUGetBuffer('MediaSessionId');
+        if(empty($mediaSessionId)) return false;
+
+        $this->SendMediaCommand('PAUSE', $mediaSessionId);
+        
+        return true;
+    }
+
+    public function Next() {
+        $mediaSessionId = $this->MUGetBuffer('MediaSessionId');
+        if(empty($mediaSessionId)) return false;
+
+        $this->SendMediaCommand('QUEUE_NEXT', $mediaSessionId);
+        
+        return true;
+    }
+
+    public function Prev() {
+        $mediaSessionId = $this->MUGetBuffer('MediaSessionId');
+        if(empty($mediaSessionId)) return false;
+
+        $this->SendMediaCommand('QUEUE_PREV', $mediaSessionId);
+        
         return true;
     }
 
