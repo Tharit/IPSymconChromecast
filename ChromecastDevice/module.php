@@ -12,9 +12,6 @@ class ChromecastDevice extends IPSModule
         //Never delete this line!
         parent::Create();
 
-        //These lines are parsed on Symcon Startup or Instance creation
-        //You cannot use variables here. Just static values.
-
         $this->RequireParent('{3CFF0FD9-E306-41DB-9B5A-9D06D38576C3}'); // IO Client Socket
 
         // properties
@@ -28,6 +25,7 @@ class ChromecastDevice extends IPSModule
         $this->RegisterVariableString("ActiveApplication", "Active Application");
         $this->RegisterVariableString("MediaState", "Media State");
         $this->RegisterVariableString("MediaTitle", "Media Title");
+        $this->RegisterVariableBoolean("Muted", "Muted");
         $this->RegisterVariableFloat("Volume", "Volume", "~Intensity.1");
         $this->EnableAction("Volume");
 
@@ -110,6 +108,10 @@ class ChromecastDevice extends IPSModule
                         if($level != $this->GetValue("Volume")) {
                             $this->SetValue("Volume", $level);
                         }
+                        $muted = $data->status->volume->muted;
+                        if($muted != $this->GetValue("Muted")) {
+                            $this->SetValue("Muted", $muted);
+                        }
                     }
 
                     if(isset($data->status->applications) && count($data->status->applications) === 1) {
@@ -159,6 +161,7 @@ class ChromecastDevice extends IPSModule
                             $newMediaTitle .= ' - ' . $media->metadata->artist;
                         }
 
+                        // @TODO: compare contentId here instead!
                         if($oldMediaTitle != $newMediaTitle) {
                             $this->SetValue("MediaTitle", $newMediaTitle);
                         }
@@ -180,16 +183,26 @@ class ChromecastDevice extends IPSModule
         if($ident === 'Volume') {
             $this->SetVolume($value);
         }
-        /*
         if($ident === 'Muted') {
             $this->SetMute($value);
         }
-        */
     }
 
     //------------------------------------------------------------------------------------
     // external methods
     //------------------------------------------------------------------------------------
+    public function GetApplicationData() {
+        // @TODO implement via buffers
+    }
+
+    public function GetTrackerData() {
+        // @TODO implement via buffers
+    }
+
+    public function GetMediaData() {
+        // @TODO implement via buffers
+    }
+
     public function Stop() {
         $sessionId = $this->MUGetBuffer('SessionId');
         if(!$sessionId) return false;
@@ -287,7 +300,6 @@ class ChromecastDevice extends IPSModule
         CSCK_SendText($this->GetConnectionID(), $c->encode());
     }
 
-    /*
     private function SetMute($muted) {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
@@ -298,7 +310,6 @@ class ChromecastDevice extends IPSModule
 
         CSCK_SendText($this->GetConnectionID(), $c->encode());
     }
-    */
     
     private function Pong() {
         $c = new CastMessage();
