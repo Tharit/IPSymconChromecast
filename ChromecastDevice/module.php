@@ -26,6 +26,8 @@ class ChromecastDevice extends IPSModule
 
         // variables
         $this->RegisterVariableString("ActiveApplication", "Active Application");
+        $this->RegisterVariableString("MediaState", "Media State");
+        $this->RegisterVariableString("MediaTitle", "Media Title");
         $this->RegisterVariableFloat("Volume", "Volume", "~Intensity.1");
         $this->EnableAction("Volume");
 
@@ -87,23 +89,74 @@ class ChromecastDevice extends IPSModule
 
         if($c->payload_type === 0) {
             $data = json_decode($c->payload_utf8);
-            if($data->type === 'RECEIVER_STATUS') {
-                if(isset($data->status->volume)) {
-                    $this->SetValue("Volume", $data->status->volume->level);
+            // heartbeat
+            if($c->namespace === 'urn:x-cast:com.google.cast.tp.heartbeat') {
+                if($data->type === 'PING') {
+                    $this->Pong();
                 }
-                if(isset($data->status->applications) && count($data->status->applications) === 1) {
-                    $this->SetValue("ActiveApplication", $data->status->applications[0]->displayName);
-                    $this->MUSetBuffer('TransportId', $data->status->applications[0]->transportId);
-                    $this->MUSetBuffer('SessionId', $data->status->applications[0]->sessionId);
-                } else {
-                    $this->SetValue("ActiveApplication", "");
-                    $this->MUSetBuffer('TransportId', '');
-                    $this->MUSetBuffer('SessionId', '');
+            // receiver
+            } else if($c->namespace === 'urn:x-cast:com.google.cast.receiver') {
+                if($data->type === 'RECEIVER_STATUS') {
+                    $oldActiveApplication = $this->getValue('ActiveApplication');
+
+                    if(isset($data->status->volume)) {
+                        $level = $data->status->volume->level;
+                        if($level != $this->GetValue("Volume")) {
+                            $this->SetValue("Volume", $level);
+                        }
+                    }
+
+                    if(isset($data->status->applications) && count($data->status->applications) === 1) {
+                        $application = $data->status->applications[0];
+
+                        if($oldActiveApplication != $application->displayName) {
+                            $this->SetValue("ActiveApplication", $application->displayName);
+                        }
+
+                        $oldSessionId = $this->MUGetBuffer('SessionId');
+                        $newSessionId = $application->sessionId;
+                        if($oldSessionId != $newSessionId) {
+                            $this->MUSetBuffer('TransportId', $application->transportId);
+                            $this->MUSetBuffer('SessionId', $newSessionId);
+
+                            $supportsMediaNS = false;
+                            foreach($application->namespaces as $namespace) {
+                                if($namespace->name === 'urn:x-cast:com.google.cast.media') {
+                                    $supportsMediaNS = true;
+                                    break;
+                                }
+                            }
+                            if($supportsMediaNS) {
+                                $this->connect($sessionId);
+                                $this->RequestStatus($sessionId);
+                            }
+                        }
+                    } else if(!empty($oldActiveApplication)) {
+                        $this->SetValue("ActiveApplication", "");
+                        $this->MUSetBuffer('TransportId', '');
+                        $this->MUSetBuffer('SessionId', '');
+                    }
                 }
-            } else if($data->type === 'PING') {
-                $this->Pong();
+            // media
+            } else if($c->namespace === 'urn:x-cast:com.google.cast.media') {
+                if($data->type === 'MEDIA_STATUS') {
+                    $this->MUSetBuffer('MediaSessionId', $dat->status->media->mediaSessionId);
+
+                    $oldMediaTitle = $this->GetValue("MediaTitle");
+                    $newMediaTitle = $data->status->media->title;
+                    if(isset($data->status->media->artist)) {
+                        $newMediaTitle .= ' - ' . $data->status->media->artist;
+                    }
+                    if($oldMediaTitle != $newMediaTitle) {
+                        $this->SetValue("MediaTitle", $newMediaTitle);
+                    }
+                    
+                    // update media state even when it does not change, so that the timestamp changes / it can be used as trigger
+                    $this->SetValue("MediaState", $newMediaState);
+                }
             }
-            $this->SendDebug('JSON Data', $c->namespace . '|' . print_r($data, true), 0);
+
+            $this->SendDebug('JSON Data', $c->namespace . ' | ' . print_r($data, true), 0);
         } else {
             $this->SendDebug('Binary Data', print_r($c->payload_binary, true), 0);
         }
@@ -153,6 +206,19 @@ class ChromecastDevice extends IPSModule
 
         CSCK_SendText($this->GetConnectionID(), $c->encode());
     }
+
+    private function SendMediaCommand($command) {
+        $volume = max(min(1, $volume), 0);
+        $c = new CastMessage();
+		$c->source_id = "sender-0";
+		$c->destination_id = $this->MUGetBuffer('sessionId');
+		$c->namespace = "urn:x-cast:com.google.cast.receiver";
+		$c->payload_type = 0;
+		$c->payload_utf8 = '{"type":"'.$command.'", "MediaSessionId":' . ($this->MUGetBuffer('mediaSessionId')) . ', "requestId":' . ($this->GetRequestID()) . '}';
+
+        CSCK_SendText($this->GetConnectionID(), $c->encode());
+    }
+
     /*
     private function SetMute($muted) {
         $c = new CastMessage();
@@ -176,22 +242,22 @@ class ChromecastDevice extends IPSModule
         CSCK_SendText($this->GetConnectionID(), $c->encode());
     }
 
-    private function Connect() {
+    private function Connect($destination_id = "") {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
-		$c->destination_id = "receiver-0";
+		$c->destination_id = empty($destination_id) ? "receiver-0" : $destination_id;
 		$c->namespace = "urn:x-cast:com.google.cast.tp.connection";
 		$c->payload_type = 0;
 		$c->payload_utf8 = '{"type":"CONNECT"}';
         CSCK_SendText($this->GetConnectionID(), $c->encode());
 
-        $this->RequestCastStatus();
+        $this->RequestStatus();
     }
 
-    private function RequestCastStatus() {
+    private function RequestStatus($destination_id = "") {
         $c = new CastMessage();
 		$c->source_id = "sender-0";
-		$c->destination_id = "receiver-0";
+		$c->destination_id = empty($destination_id) ? "receiver-0" : $destination_id;
 		$c->namespace = "urn:x-cast:com.google.cast.receiver";
 		$c->payload_type = 0;
 		$c->payload_utf8 = '{"type":"GET_STATUS", "requestId":' . ($this->GetRequestID()) . '}';
