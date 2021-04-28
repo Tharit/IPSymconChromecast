@@ -180,8 +180,11 @@ class ChromecastDevice extends IPSModule
                         $this->SetValue("MediaState", $newMediaState);
                     }
 
-                    $this->MUSetBuffer('MediaStartTime', microtime(true) - $status->currentTime);
-                    $this->MUSetBuffer('MediaRate', $status->playbackRate);
+                    $this->MUSetBuffer('MediaTracker', (object)[
+                        "position": $status->currentTime,
+                        "timestamp": microtime(true),
+                        "rate": $status->playbackRate
+                    ]);
                     $this->UpdateTracker();
                 }
             }
@@ -276,12 +279,15 @@ class ChromecastDevice extends IPSModule
     }
 
     private function UpdateTracker() {
-        $now = microtime(true);
-        $start = $this->MUGetBuffer('MediaStartTime');
+        $mediaState = $this->GetValue('MediaState');
+        $tracker = $this->MUGetBuffer('MediaTracker');
         $media = $this->MUGetBuffer('Media');
-        $rate = $this->MUGetBuffer('MediaRate');
-        if($start == '' || $media === '' || $rate === '') return;
-        $elapsed = ($now - $start) * $rate;
+        if($tracker == '' || $media === '') return;
+        $elapsed = $tracker->position;
+        if($mediaState === 'PLAYING') {
+            $now = microtime(true);
+            $elapsed += ($now - $tracker->timestamp) * $rate;
+        }
         $this->SetValue('MediaPosition', $this->FormatDuration($elapsed) . '/' . $this->FormatDuration($media->duration));
     }
 
@@ -298,8 +304,7 @@ class ChromecastDevice extends IPSModule
             $this->SetValue("MediaTitle", '');
             $this->SetValue("MediaState", '');
             $this->SetValue("MediaPosition", '');
-            $this->MUSetBuffer("MediaStartTime", '');
-            $this->MUSetBuffer("MediaRate", '');
+            $this->MUSetBuffer("MediaTracker", '');
             $this->MUSetBuffer('Media', '');
             $this->MUSetBuffer('MediaSessionId', '');
         }
