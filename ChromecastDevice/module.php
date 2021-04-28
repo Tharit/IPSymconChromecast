@@ -286,7 +286,7 @@ class ChromecastDevice extends IPSModule
         $elapsed = $tracker->position;
         if($mediaState === 'PLAYING') {
             $now = microtime(true);
-            $elapsed += ($now - $tracker->timestamp) * $rate;
+            $elapsed += ($now - $tracker->timestamp) * $tracker->rate;
         }
         $this->SetValue('MediaPosition', $this->FormatDuration($elapsed) . '/' . $this->FormatDuration($media->duration));
     }
