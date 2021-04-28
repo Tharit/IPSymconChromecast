@@ -23,7 +23,7 @@ class ChromecastDevice extends IPSModule
 
         // timer
         // https://community.symcon.de/t/registertimer-zum-aufruf-nicht-oeffentlicher-funktionen/47763/2
-        $this->RegisterTimer("TrackerTimer", 0, 'IPS_RequestAction($_IPS["TARGET"], "TrackerTimerCallback", "Callback");');		
+        $this->RegisterTimer("TrackerTimer", 0, 'Chromecast_UpdateTracker($_IPS["TARGET"]);');		
 
         // variables
         $this->RegisterVariableString("ActiveApplication", "Active Application");
@@ -197,8 +197,6 @@ class ChromecastDevice extends IPSModule
         $this->SendDebug('Action', $ident, 0);
         if($ident === 'Volume') {
             $this->SetVolume($value);
-        } else if($ident === 'TrackerTimerCallback') {
-            $this->UpdateTracker();
         }
     }
 
@@ -275,7 +273,7 @@ class ChromecastDevice extends IPSModule
         return str_pad(floor($seconds / 60), 2, '0', STR_PAD_LEFT) . ':' . str_pad(floor($seconds % 60), 2, '0', STR_PAD_LEFT);
     }
 
-    private function UpdateTracker() {
+    public function UpdateTracker() {
         $now = microtime(true);
         $start = $this->MUGetBuffer('MediaStartTime');
         $media = $this->MUGetBuffer('Media');
