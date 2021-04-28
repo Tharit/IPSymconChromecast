@@ -5,7 +5,8 @@
         "Volume": "Lautstärke",
         "Muted": "Stumm",
         "Media State": "Medienstatus",
-        "Media Titel": "Medientitle"
+        "Media Titel": "Medientitle",
+        "Media Position": "Medienposition"
       }
     }
 }
