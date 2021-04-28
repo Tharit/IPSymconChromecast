@@ -1,12 +1,10 @@
 {
     "translations": {
       "de": {
-        "Active Application": "Aktive Anwendung",
+        "Application": "Anwendung",
         "Volume": "Lautstärke",
-        "Muted": "Stumm",
-        "Media State": "Medienstatus",
-        "Media Titel": "Medientitle",
-        "Media Position": "Medienposition"
+        "State": "Status",
+        "Titel": "Titel"
       }
     }
 }

@@ -22,9 +22,9 @@ class ChromecastDevice extends IPSModule
         $this->RegisterPropertyString('port', '');
 
         // variables
-        $this->RegisterVariableString("ActiveApplication", "Active Application");
-        $this->RegisterVariableString("State", "Media State");
-        $this->RegisterVariableString("Title", "Media Title");
+        $this->RegisterVariableString("Application", "Application");
+        $this->RegisterVariableString("State", "State");
+        $this->RegisterVariableString("Title", "Title");
         $this->RegisterVariableFloat("Volume", "Volume", "~Intensity.1");
         $this->EnableAction("Volume");
 
@@ -116,7 +116,7 @@ class ChromecastDevice extends IPSModule
                         if(!is_object($oldApplication) || $oldApplication->appId != $application->appId) {
                             $applicationDidChange = true;
                             $this->ResetState();
-                            $this->SetValue("ActiveApplication", $application->displayName);
+                            $this->SetValue("Application", $application->displayName);
                             $this->MUSetBuffer("Application", $application);
                         }
 
@@ -148,7 +148,7 @@ class ChromecastDevice extends IPSModule
                 }
             // media
             } else if($c->namespace === 'urn:x-cast:com.google.cast.media') {
-                if($data->type === 'MEDIA_STATUS') {
+                if($data->type === 'MEDIA_STATUS' && count($data->status) >= 1) {
                     $status = $data->status[0];
 
                     $this->MUSetBuffer('MediaSessionId', $status->mediaSessionId);
@@ -276,7 +276,7 @@ class ChromecastDevice extends IPSModule
     private function ResetState($application = true, $media = true) {
         // reset app state
         if($application) {
-            $this->SetValue("ActiveApplication", '');
+            $this->SetValue("Application", '');
             $this->MUSetBuffer('Application', '');
             $this->MUSetBuffer('SessionId', '');
             $this->MUSetBuffer('TransportId', '');
