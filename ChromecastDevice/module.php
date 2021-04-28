@@ -194,6 +194,7 @@ class ChromecastDevice extends IPSModule
     
     public function RequestAction($ident, $value)
     {
+        $this->SendDebug('Action', $ident, 0);
         if($ident === 'Volume') {
             $this->SetVolume($value);
         } else if($ident === 'TrackerTimerCallback') {
@@ -208,10 +209,6 @@ class ChromecastDevice extends IPSModule
         $data = $this->MUGetBuffer('Application');
         if(empty($data)) return null;
         return $data;
-    }
-
-    public function GetTrackerData() {
-        // @TODO implement via buffers
     }
 
     public function GetMediaData() {
@@ -275,9 +272,9 @@ class ChromecastDevice extends IPSModule
     // module internals
     //------------------------------------------------------------------------------------
     private function FormatDuration($seconds) {
-        return str_pad(floor($seconds / 60), 2, '0') . ':' . str_pad(floor($seconds % 60), 2, '0');
+        return str_pad(floor($seconds / 60), 2, '0', STR_PAD_LEFT) . ':' . str_pad(floor($seconds % 60), 2, '0', STR_PAD_LEFT);
     }
-    
+
     private function UpdateTracker() {
         $now = microtime(true);
         $start = $this->MUGetBuffer('MediaStartTime');
@@ -285,6 +282,7 @@ class ChromecastDevice extends IPSModule
         $rate = $this->MUGetBuffer('MediaRate');
         if($start == '' || $media === '' || $rate === '') return;
         $elapsed = ($now - $start) * $rate;
+        $this->SendDebug('Tracker', $elapsed, 0);
         $this->SetValue('MediaPosition', $this->FormatDuration($elapsed) . '/' . $this->FormatDuration($media->duration));
     }
 
