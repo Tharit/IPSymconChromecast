@@ -21,11 +21,15 @@ class ChromecastDevice extends IPSModule
         $this->RegisterPropertyString('ip', '');
         $this->RegisterPropertyString('port', '');
 
+        // timer
+        // https://community.symcon.de/t/registertimer-zum-aufruf-nicht-oeffentlicher-funktionen/47763/2
+        $this->RegisterTimer("TrackerTimer", 0, 'IPS_RequestAction($_IPS["TARGET"], "TrackerTimerCallback");');		
+
         // variables
         $this->RegisterVariableString("ActiveApplication", "Active Application");
         $this->RegisterVariableString("MediaState", "Media State");
         $this->RegisterVariableString("MediaTitle", "Media Title");
-        $this->RegisterVariableBoolean("Muted", "Muted");
+        $this->RegisterVariableString("MediaPosition", "Media Position");
         $this->RegisterVariableFloat("Volume", "Volume", "~Intensity.1");
         $this->EnableAction("Volume");
 
@@ -108,10 +112,6 @@ class ChromecastDevice extends IPSModule
                         if($level != $this->GetValue("Volume")) {
                             $this->SetValue("Volume", $level);
                         }
-                        $muted = $data->status->volume->muted;
-                        if($muted != $this->GetValue("Muted")) {
-                            $this->SetValue("Muted", $muted);
-                        }
                     }
 
                     if(isset($data->status->applications) && count($data->status->applications) === 1) {
@@ -128,6 +128,7 @@ class ChromecastDevice extends IPSModule
                         $oldSessionId = $this->MUGetBuffer('SessionId');
                         $newSessionId = $application->sessionId;
                         if($oldSessionId != $newSessionId) {
+                            // new session in same app?
                             if(!$applicationDidChange) {
                                 $this->ResetState(false, true);
                             }
@@ -142,6 +143,7 @@ class ChromecastDevice extends IPSModule
                                 }
                             }
                             if($supportsMediaNS) {
+                                $this->SetTimerInterval('TrackerTimer', 1000);
                                 $this->connect($newSessionId);
                                 $this->SendMediaCommand("GET_STATUS");
                             }
@@ -166,7 +168,7 @@ class ChromecastDevice extends IPSModule
                             $this->MUSetBuffer('Media', $media);
                             $newMediaTitle = $media->metadata->title;
                             if(isset($media->metadata->artist)) {
-                                $newMediaTitle .= ' - ' . $media->metadata->artist;
+                                $newMediaTitle .= ' • ' . $media->metadata->artist;
                             }
                             $this->SetValue("MediaTitle", $newMediaTitle);
                         }
@@ -177,6 +179,10 @@ class ChromecastDevice extends IPSModule
                     if($oldMediaState != $newMediaState) {
                         $this->SetValue("MediaState", $newMediaState);
                     }
+
+                    $this->MUSetBuffer('MediaStartTime', microtime(true) - $status->currentTime);
+                    $this->MUSetBuffer('MediaRate', $status->playbackRate);
+                    $this->UpdateTracker();
                 }
             }
 
@@ -190,9 +196,8 @@ class ChromecastDevice extends IPSModule
     {
         if($ident === 'Volume') {
             $this->SetVolume($value);
-        }
-        if($ident === 'Muted') {
-            $this->SetMute($value);
+        } else if($ident === 'TrackerTimerCallback') {
+            $this->UpdateTracker();
         }
     }
 
@@ -269,6 +274,16 @@ class ChromecastDevice extends IPSModule
     //------------------------------------------------------------------------------------
     // module internals
     //------------------------------------------------------------------------------------
+    private function UpdateTracker() {
+        $now = microtime(true);
+        $start = $this->MUGetBuffer('MediaStartTime');
+        $media = $this->MUGetBuffer('Media');
+        $rate = $this->MUGetBuffer('MediaRate');
+        if($start == '' || $media === '' || $rate === '') return;
+        $elapsed = ($now - $start) * $rate;
+        $this->SetValue('MediaPosition', $elapsed . '/' . $media->duration);
+    }
+
     private function ResetState($application = true, $media = true) {
         // reset app state
         if($application) {
@@ -278,8 +293,12 @@ class ChromecastDevice extends IPSModule
             $this->MUSetBuffer('TransportId', '');
         }
         if($media) {
+            $this->SetTimerInterval('TrackerTimer', 0);
             $this->SetValue("MediaTitle", '');
             $this->SetValue("MediaState", '');
+            $this->SetValue("MediaPosition", '');
+            $this->MUSetBuffer("MediaStartTime", '');
+            $this->MUSetBuffer("MediaRate", '');
             $this->MUSetBuffer('Media', '');
             $this->MUSetBuffer('MediaSessionId', '');
         }
@@ -313,17 +332,6 @@ class ChromecastDevice extends IPSModule
             $c->payload_utf8 .= '"mediaSessionId":' . $mediaSessionId . ', ';
         }
         $c->payload_utf8 .= '"requestId":' . ($this->GetRequestID()) . '}';
-
-        CSCK_SendText($this->GetConnectionID(), $c->encode());
-    }
-
-    private function SetMute($muted) {
-        $c = new CastMessage();
-		$c->source_id = "sender-0";
-		$c->destination_id = "receiver-0";
-		$c->namespace = "urn:x-cast:com.google.cast.receiver";
-		$c->payload_type = 0;
-		$c->payload_utf8 = '{"type":"SET_VOLUME", "volume":{"muted":'.($muted?'true':'false').'},"requestId":' . ($this->GetRequestID()) . '}';
 
         CSCK_SendText($this->GetConnectionID(), $c->encode());
     }
