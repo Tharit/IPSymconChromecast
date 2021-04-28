@@ -171,7 +171,7 @@ class ChromecastDevice extends IPSModule
                     // state is updated everytime we receive a message, because it acts as trigger for the tracker
                     $this->SetValue("State", $status->playerState);
                     
-                    $this->MUSetBuffer('Tracker', (object)[
+                    $this->MUSetBuffer('Tracker', [
                         "position" => $status->currentTime,
                         "timestamp" => microtime(true),
                         "rate" => $status->playbackRate,
@@ -200,19 +200,19 @@ class ChromecastDevice extends IPSModule
     public function GetData() {
         $data = $this->MUGetBuffer('Application');
         if(empty($data)) return null;
-        return $data;
+        return json_encode($data);
     }
 
     public function GetTrackerData() {
         $data = $this->MUGetBuffer('Tracker');
         if(empty($data)) return null;
-        return $data;
+        return json_encode($data);
     }
 
     public function GetMediaData() {
         $data = $this->MUGetBuffer('Media');
         if(empty($data)) return null;
-        return $data;
+        return json_encode($data);
     }
 
     public function Stop() {
