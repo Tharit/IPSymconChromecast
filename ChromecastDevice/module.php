@@ -120,7 +120,7 @@ class ChromecastDevice extends IPSModule
                         $applicationDidChange = false;
                         if(!is_object($oldApplication) || $oldApplication->appId != $application->appId) {
                             $applicationDidChange = true;
-                            $this->Reset();
+                            $this->ResetState();
                             $this->SetValue("ActiveApplication", $application->displayName);
                             $this->MUSetBuffer("Application", $application);
                         }
@@ -129,7 +129,7 @@ class ChromecastDevice extends IPSModule
                         $newSessionId = $application->sessionId;
                         if($oldSessionId != $newSessionId) {
                             if(!$applicationDidChange) {
-                                $this->Reset(false, true);
+                                $this->ResetState(false, true);
                             }
                             $this->MUSetBuffer('TransportId', $application->transportId);
                             $this->MUSetBuffer('SessionId', $newSessionId);
