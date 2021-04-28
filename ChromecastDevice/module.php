@@ -181,9 +181,9 @@ class ChromecastDevice extends IPSModule
                     }
 
                     $this->MUSetBuffer('MediaTracker', (object)[
-                        "position": $status->currentTime,
-                        "timestamp": microtime(true),
-                        "rate": $status->playbackRate
+                        "position" => $status->currentTime,
+                        "timestamp" => microtime(true),
+                        "rate" => $status->playbackRate
                     ]);
                     $this->UpdateTracker();
                 }
