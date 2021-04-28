@@ -275,9 +275,9 @@ class ChromecastDevice extends IPSModule
     // module internals
     //------------------------------------------------------------------------------------
     private function FormatDuration($seconds) {
-        $res = str_pad(floor($seconds / 60), 2, '0') . ':' . str_pad(floor($seconds % 60), 2, '0');
-
+        return str_pad(floor($seconds / 60), 2, '0') . ':' . str_pad(floor($seconds % 60), 2, '0');
     }
+    
     private function UpdateTracker() {
         $now = microtime(true);
         $start = $this->MUGetBuffer('MediaStartTime');
