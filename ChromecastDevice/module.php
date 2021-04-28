@@ -101,7 +101,7 @@ class ChromecastDevice extends IPSModule
             // receiver
             } else if($c->namespace === 'urn:x-cast:com.google.cast.receiver') {
                 if($data->type === 'RECEIVER_STATUS') {
-                    $oldActiveApplication = $this->getValue('ActiveApplication');
+                    $oldApplication = $this->MUGetBuffer('Application');
 
                     if(isset($data->status->volume)) {
                         $level = $data->status->volume->level;
@@ -117,13 +117,20 @@ class ChromecastDevice extends IPSModule
                     if(isset($data->status->applications) && count($data->status->applications) === 1) {
                         $application = $data->status->applications[0];
 
-                        if($oldActiveApplication != $application->displayName) {
+                        $applicationDidChange = false;
+                        if(!is_object($oldApplication) || $oldApplication->appId != $application->appId) {
+                            $applicationDidChange = true;
+                            $this->Reset();
                             $this->SetValue("ActiveApplication", $application->displayName);
+                            $this->MUSetBuffer("Application", $application);
                         }
 
                         $oldSessionId = $this->MUGetBuffer('SessionId');
                         $newSessionId = $application->sessionId;
                         if($oldSessionId != $newSessionId) {
+                            if(!$applicationDidChange) {
+                                $this->Reset(false, true);
+                            }
                             $this->MUSetBuffer('TransportId', $application->transportId);
                             $this->MUSetBuffer('SessionId', $newSessionId);
 
@@ -139,7 +146,7 @@ class ChromecastDevice extends IPSModule
                                 $this->SendMediaCommand("GET_STATUS");
                             }
                         }
-                    } else if(!empty($oldActiveApplication)) {
+                    } else if(is_object($oldApplication)) {
                         $this->ResetState();
                     }
                 }
@@ -152,23 +159,24 @@ class ChromecastDevice extends IPSModule
 
                     // media information is only sent if it changed
                     if(isset($status->media)) {
-                        $oldMediaTitle = $this->GetValue("MediaTitle");
-                        $newMediaTitle = "";
-                        
                         $media = $status->media;
-                        $newMediaTitle = $media->metadata->title;
-                        if(isset($media->metadata->artist)) {
-                            $newMediaTitle .= ' - ' . $media->metadata->artist;
-                        }
+                        $oldMedia = $this->MUGetBuffer('Media');
 
-                        // @TODO: compare contentId here instead!
-                        if($oldMediaTitle != $newMediaTitle) {
+                        if(!is_object($oldMedia) || $oldMedia->contentId != $media->contentId) {
+                            $this->MUSetBuffer('Media', $media);
+                            $newMediaTitle = $media->metadata->title;
+                            if(isset($media->metadata->artist)) {
+                                $newMediaTitle .= ' - ' . $media->metadata->artist;
+                            }
                             $this->SetValue("MediaTitle", $newMediaTitle);
                         }
                     }
 
-                    // update media state even when it does not change, so that the timestamp changes / it can be used as trigger
-                    $this->SetValue("MediaState", $status->playerState);
+                    $oldMediaState = $this->GetValue("MediaTitle");
+                    $newMediaState = $status->playerState;
+                    if($oldMediaState != $newMediaState) {
+                        $this->SetValue("MediaState", $newMediaState);
+                    }
                 }
             }
 
@@ -192,7 +200,9 @@ class ChromecastDevice extends IPSModule
     // external methods
     //------------------------------------------------------------------------------------
     public function GetApplicationData() {
-        // @TODO implement via buffers
+        $data = $this->MUGetBuffer('Application');
+        if(empty($data)) return null;
+        return $data;
     }
 
     public function GetTrackerData() {
@@ -200,7 +210,9 @@ class ChromecastDevice extends IPSModule
     }
 
     public function GetMediaData() {
-        // @TODO implement via buffers
+        $data = $this->MUGetBuffer('Media');
+        if(empty($data)) return null;
+        return $data;
     }
 
     public function Stop() {
@@ -257,15 +269,20 @@ class ChromecastDevice extends IPSModule
     //------------------------------------------------------------------------------------
     // module internals
     //------------------------------------------------------------------------------------
-    private function ResetState() {
-        // reset state
-        $this->SetValue("ActiveApplication", '');
-        $this->SetValue("MediaTitle", '');
-        $this->SetValue("MediaState", '');
-        $this->MUSetBuffer('SessionId', '');
-        $this->MUSetBuffer('TransportId', '');
-        $this->MUSetBuffer('SessionId', '');
-        $this->MUSetBuffer('MediaSessionId', '');
+    private function ResetState($application = true, $media = true) {
+        // reset app state
+        if($application) {
+            $this->SetValue("ActiveApplication", '');
+            $this->MUSetBuffer('Application', '');
+            $this->MUSetBuffer('SessionId', '');
+            $this->MUSetBuffer('TransportId', '');
+        }
+        if($media) {
+            $this->SetValue("MediaTitle", '');
+            $this->SetValue("MediaState", '');
+            $this->MUSetBuffer('Media', '');
+            $this->MUSetBuffer('MediaSessionId', '');
+        }
     }
 
     private function SetVolume($volume) {
