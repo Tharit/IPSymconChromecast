@@ -175,7 +175,7 @@ class ChromecastDevice extends IPSModule
                         "position" => $status->currentTime,
                         "timestamp" => microtime(true),
                         "rate" => $status->playbackRate,
-                        "repeat" => $status->repeat_mode
+                        "repeat" => $status->repeatMode
                     ]);
                 }
             }
