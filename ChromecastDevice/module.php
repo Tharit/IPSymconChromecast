@@ -198,28 +198,19 @@ class ChromecastDevice extends IPSModule
     //------------------------------------------------------------------------------------
     // external methods
     //------------------------------------------------------------------------------------
-    public function Test1() {
-        return ["a"=>1,"b"=>2];
-    }
-    public function Test2() {
-        return (object)["a"=>1,"b"=>2];
-    }
     public function GetData() {
         $data = $this->MUGetBuffer('Application');
-        if(empty($data)) return null;
-        return json_encode($data);
+        return json_encode(empty($data) ? null : $data);
     }
 
     public function GetTrackerData() {
         $data = $this->MUGetBuffer('Tracker');
-        if(empty($data)) return null;
-        return json_encode($data);
+        return json_encode(empty($data) ? null : $data);
     }
 
     public function GetMediaData() {
         $data = $this->MUGetBuffer('Media');
-        if(empty($data)) return null;
-        return json_encode($data);
+        return json_encode(empty($data) ? null : $data);
     }
 
     public function Stop() {
