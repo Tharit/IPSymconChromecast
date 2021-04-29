@@ -255,8 +255,8 @@ class ChromecastDevice extends IPSModule
 		$c->payload_type = 0;
 		$c->payload_utf8 = json_encode([
             "type" => "LAUNCH",
-            "appId": $appId,
-            "requestId": $this->GetRequestID()
+            "appId" => $appId,
+            "requestId" => $this->GetRequestID()
         ]);
         CSCK_SendText($this->GetConnectionID(), $c->encode());
     }
@@ -266,7 +266,7 @@ class ChromecastDevice extends IPSModule
         if(empty($sessionId)) return false;
 
         $message = [
-            "media": $media,
+            "media" => $media
         ];
         if(is_bool($autoplay)) {
             $message["autoplay"] = $autoplay;
