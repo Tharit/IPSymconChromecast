@@ -115,7 +115,7 @@ class ChromecastDevice extends IPSModule
                 } else if($data->type === 'RECEIVER_STATUS') {
                     $oldApplication = $this->MUGetBuffer('Application');
 
-                    if(!$this->GetValue("connected")) {
+                    if(!$this->GetValue("Connected")) {
                         $this->SetValue("Connected", true);
                     }
 
@@ -207,7 +207,7 @@ class ChromecastDevice extends IPSModule
         if($ident === 'Volume') {
             $this->SetVolume($value);
         } else if($ident === 'TimerCallback') {
-            if($value === 'PingTimer' && $this->GetValue("connected")) {
+            if($value === 'PingTimer' && $this->GetValue("Connected")) {
                 $now = microtime(true);
 
                 $lastPongTimestamp = $this->MUGetBuffer("LastPongTimestamp");
@@ -265,7 +265,7 @@ class ChromecastDevice extends IPSModule
     }
 
     public function Launch(string $appId) {
-        if(!$this->GetValue("connected")) {
+        if(!$this->GetValue("Connected")) {
             return false;
         }
 
@@ -394,8 +394,10 @@ class ChromecastDevice extends IPSModule
     }
 
     private function SendMediaCommand($command, $mediaSessionId = "", $additionalProperties = null) {
-        // media session id must be present for all commands except GET_STATUS
-        if(empty($mediaSessionId) && $command !== "GET_STATUS") {
+        // media session id must be present for all commands except GET_STATUS and LOAD
+        if(empty($mediaSessionId) && 
+            $command !== "GET_STATUS" &&
+            $command !== "LOAD") {
             return;
         }
 
