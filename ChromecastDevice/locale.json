@@ -2,6 +2,7 @@
     "translations": {
       "de": {
         "Application": "Anwendung",
+        "Connected": "Verbunden",
         "Volume": "Lautstärke",
         "State": "Status",
         "Titel": "Titel"

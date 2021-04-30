@@ -24,9 +24,10 @@ class ChromecastDevice extends IPSModule
         $this->RegisterPropertyString('port', '');
 
         // timers
-        $this->RegisterTimer("PingTimer", 5000, 'IPS_RequestAction($_IPS["TARGET"], "TimerCallback", "PingTimer");');
+        $this->RegisterTimer("PingTimer", 30000, 'IPS_RequestAction($_IPS["TARGET"], "TimerCallback", "PingTimer");');
 
         // variables
+        $this->RegisterVariableBoolean("Connected", "Connected");
         $this->RegisterVariableString("Application", "Application");
         $this->RegisterVariableString("State", "State");
         $this->RegisterVariableString("Title", "Title");
@@ -76,6 +77,8 @@ class ChromecastDevice extends IPSModule
                 // if parent became active: connect
                 if ($Data[0] === IS_ACTIVE) {
                     $this->Connect();
+                } else {
+                    $this->SetValue("Connected", false);
                 }
                 break;
             default:
@@ -106,8 +109,15 @@ class ChromecastDevice extends IPSModule
                 }
             // receiver
             } else if($c->namespace === 'urn:x-cast:com.google.cast.receiver') {
-                if($data->type === 'RECEIVER_STATUS') {
+                if($data->type === 'CLOSE') {
+                    $this->ResetState();
+                    IPS_ApplyChanges($this->GetConnectionID());
+                } else if($data->type === 'RECEIVER_STATUS') {
                     $oldApplication = $this->MUGetBuffer('Application');
+
+                    if(!$this->GetValue("connected")) {
+                        $this->SetValue("Connected", true);
+                    }
 
                     if(isset($data->status->volume)) {
                         $level = $data->status->volume->level;
@@ -187,20 +197,17 @@ class ChromecastDevice extends IPSModule
                     ]);
                 }
             }
-
-            $this->SendDebug('JSON Data', $c->namespace . ' | ' . print_r($data, true), 0);
         } else {
-            $this->SendDebug('Binary Data', print_r($c->payload_binary, true), 0);
+            $this->SendDebug('Received Binary Data', print_r($c->payload_binary, true), 0);
         }
     }
 
     public function RequestAction($ident, $value)
     {
-        $this->SendDebug('Action', $ident, 0);
         if($ident === 'Volume') {
             $this->SetVolume($value);
         } else if($ident === 'TimerCallback') {
-            if($value === 'PingTimer' && $this->HasActiveParent()) {
+            if($value === 'PingTimer' && $this->GetValue("connected")) {
                 $now = microtime(true);
 
                 $lastPongTimestamp = $this->MUGetBuffer("LastPongTimestamp");
@@ -209,6 +216,8 @@ class ChromecastDevice extends IPSModule
                 // check if last ping was answered
                 if($lastPongTimestamp < $lastPingTimestamp) {
                     // timeout => reconnect
+                    $this->ResetState();
+                    IPS_ApplyChanges($this->GetConnectionID());
                     $this->SendDebug('Ping Timeout', 'PING was not answered in time, invalidating connection', 0);
                 } else {
                     $this->Ping();
@@ -255,7 +264,11 @@ class ChromecastDevice extends IPSModule
         return true;
     }
 
-    public function Launch($appId) {
+    public function Launch(string $appId) {
+        if(!$this->GetValue("connected")) {
+            return false;
+        }
+
         $c = new CastMessage();
 		$c->source_id = "sender-0";
 		$c->destination_id = "receiver-0";
@@ -267,9 +280,11 @@ class ChromecastDevice extends IPSModule
             "requestId" => $this->GetRequestID()
         ]);
         CSCK_SendText($this->GetConnectionID(), $c->encode());
+            
+        return true;
     }
 
-    public function Seek($position) {
+    public function Seek(float $position) {
         $mediaSessionId = $this->MUGetBuffer('MediaSessionId');
         if(empty($mediaSessionId)) return false;
 
@@ -284,7 +299,7 @@ class ChromecastDevice extends IPSModule
         return true;
     }
 
-    public function Load($media, $options = null) {
+    public function Load(object $media, object $options = null) {
         $sessionId = $this->MUGetBuffer('SessionId');
         if(empty($sessionId)) return false;
 
