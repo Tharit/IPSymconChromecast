@@ -3,6 +3,8 @@
 require_once(__DIR__ . '/../libs/protobuf.php');
 require_once(__DIR__ . '/../libs/ModuleUtilities.php');
 
+// @TODO: queue management methods
+
 class ChromecastDevice extends IPSModule
 {
     use ModuleUtilities;
@@ -20,6 +22,9 @@ class ChromecastDevice extends IPSModule
         $this->RegisterPropertyString('type', '');
         $this->RegisterPropertyString('ip', '');
         $this->RegisterPropertyString('port', '');
+
+        // timers
+        $this->RegisterTimer("PingTimer", 5000, 'IPS_RequestAction($_IPS["TARGET"], "TimerCallback", "PingTimer");');
 
         // variables
         $this->RegisterVariableString("Application", "Application");
@@ -96,6 +101,8 @@ class ChromecastDevice extends IPSModule
             if($c->namespace === 'urn:x-cast:com.google.cast.tp.heartbeat') {
                 if($data->type === 'PING') {
                     $this->Pong();
+                } else if($data->type === 'PONG') {
+                    $this->MUSetBuffer("LastPongTimestamp", microtime(true));
                 }
             // receiver
             } else if($c->namespace === 'urn:x-cast:com.google.cast.receiver') {
@@ -170,7 +177,7 @@ class ChromecastDevice extends IPSModule
 
                     // state is updated everytime we receive a message, because it acts as trigger for the tracker
                     $this->SetValue("State", $status->playerState);
-                    
+
                     $this->MUSetBuffer('Tracker', [
                         "position" => $status->currentTime,
                         "timestamp" => microtime(true),
@@ -186,12 +193,28 @@ class ChromecastDevice extends IPSModule
             $this->SendDebug('Binary Data', print_r($c->payload_binary, true), 0);
         }
     }
-    
+
     public function RequestAction($ident, $value)
     {
         $this->SendDebug('Action', $ident, 0);
         if($ident === 'Volume') {
             $this->SetVolume($value);
+        } else if($ident === 'TimerCallback') {
+            if($value === 'PingTimer' && $this->HasActiveParent()) {
+                $now = microtime(true);
+
+                $lastPongTimestamp = $this->MUGetBuffer("LastPongTimestamp");
+                $lastPingTimestamp = $this->MUGetBuffer("LastPingTimestamp");
+
+                // check if last ping was answered
+                if($lastPongTimestamp < $lastPingTimestamp) {
+                    // timeout => reconnect
+                    $this->SendDebug('Ping Timeout', 'PING was not answered in time, invalidating connection', 0);
+                } else {
+                    $this->Ping();
+                    $this->MUSetBuffer("LastPingTimestamp", $now);
+                }
+            }
         }
     }
 
@@ -232,6 +255,20 @@ class ChromecastDevice extends IPSModule
         return true;
     }
 
+    public function Launch($appId) {
+        $c = new CastMessage();
+		$c->source_id = "sender-0";
+		$c->destination_id = "receiver-0";
+		$c->namespace = "urn:x-cast:com.google.cast.receiver";
+		$c->payload_type = 0;
+		$c->payload_utf8 = json_encode([
+            "type" => "LAUNCH",
+            "appId" => $appId,
+            "requestId" => $this->GetRequestID()
+        ]);
+        CSCK_SendText($this->GetConnectionID(), $c->encode());
+    }
+
     public function Seek($position) {
         $mediaSessionId = $this->MUGetBuffer('MediaSessionId');
         if(empty($mediaSessionId)) return false;
@@ -247,35 +284,21 @@ class ChromecastDevice extends IPSModule
         return true;
     }
 
-    public function Launch($appId) {
-        $c = new CastMessage();
-		$c->source_id = "sender-0";
-		$c->destination_id = "receiver-0";
-		$c->namespace = "urn:x-cast:com.google.cast.receiver";
-		$c->payload_type = 0;
-		$c->payload_utf8 = json_encode([
-            "type" => "LAUNCH",
-            "appId" => $appId,
-            "requestId" => $this->GetRequestID()
-        ]);
-        CSCK_SendText($this->GetConnectionID(), $c->encode());
-    }
-
-    public function Load($media, $autoplay = null, $currentTime = null, $customData = null) {
+    public function Load($media, $options = null) {
         $sessionId = $this->MUGetBuffer('SessionId');
         if(empty($sessionId)) return false;
 
         $message = [
             "media" => $media
         ];
-        if(is_bool($autoplay)) {
-            $message["autoplay"] = $autoplay;
-        }
-        if(is_numeric($currentTime)) {
-            $message["currentTime"] = $currentTime;
-        }
-        if(is_object($customData) || is_array($customData)) {
-            $message["customData"] = $customData;
+        if(is_array($options)) {
+            // @TODO: check activeTrackIds?
+            if(is_bool($options["autoplay"])) {
+                $message["autoplay"] = $options["autoplay"];
+            }
+            if(is_numeric($options["currentTime"])) {
+                $message["currentTime"] = $options["currentTime"];
+            }
         }
         $this->SendMediaCommand('LOAD', '', $message);
 
@@ -324,6 +347,8 @@ class ChromecastDevice extends IPSModule
     private function ResetState($application = true, $media = true) {
         // reset app state
         if($application) {
+            $this->MUSetBuffer("LastPongTimestamp", 0);
+            $this->MUSetBuffer("LastPingTimestamp", 0);
             $this->SetValue("Application", '');
             $this->MUSetBuffer('Application', '');
             $this->MUSetBuffer('SessionId', '');
@@ -386,6 +411,16 @@ class ChromecastDevice extends IPSModule
 		$c->namespace = "urn:x-cast:com.google.cast.tp.heartbeat";
 		$c->payload_type = 0;
 		$c->payload_utf8 = json_encode(["type" => "PONG"]);
+        CSCK_SendText($this->GetConnectionID(), $c->encode());
+    }
+
+    private function Ping() {
+        $c = new CastMessage();
+		$c->source_id = "sender-0";
+		$c->destination_id = "receiver-0";
+		$c->namespace = "urn:x-cast:com.google.cast.tp.heartbeat";
+		$c->payload_type = 0;
+		$c->payload_utf8 = json_encode(["type" => "PING"]);
         CSCK_SendText($this->GetConnectionID(), $c->encode());
     }
 
