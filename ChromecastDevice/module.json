@@ -11,5 +11,5 @@
 	"childRequirements": [],
 	"implemented": ["{018EF6B5-AB94-40C6-AA53-46943E824ACF}"],
 	"prefix": "Chromecast",
-    "url": "https://github.com/thart/IPSymconChromecast"
+    "url": "https://github.com/tharit/IPSymconChromecast"
 }

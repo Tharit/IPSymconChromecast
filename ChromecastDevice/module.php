@@ -28,10 +28,16 @@ class ChromecastDevice extends IPSModule
 
         // variables
         $this->RegisterVariableBoolean("Connected", "Connected");
+        $this->RegisterVariableString("Source", "Source");
         $this->RegisterVariableString("Application", "Application");
         $this->RegisterVariableString("State", "State");
+        $this->RegisterVariableString("Artist", "Artist");
+        $this->RegisterVariableString("Album", "Album");
         $this->RegisterVariableString("Title", "Title");
-        $this->RegisterVariableFloat("Volume", "Volume", "~Intensity.1");
+        $this->RegisterVariableInteger("Position", "Position");
+        $this->RegisterVariableInteger("Duration", "Duration");
+        $this->RegisterVariableString("Cover", "Cover");
+        $this->RegisterVariableInteger("Volume", "Volume", "~Intensity.100");
         $this->EnableAction("Volume");
 
         // messages
@@ -122,7 +128,7 @@ class ChromecastDevice extends IPSModule
                     if(isset($data->status->volume)) {
                         $level = $data->status->volume->level;
                         if($level != $this->GetValue("Volume")) {
-                            $this->SetValue("Volume", $level);
+                            $this->SetValue("Volume", round($level * 100));
                         }
                     }
 
@@ -177,24 +183,30 @@ class ChromecastDevice extends IPSModule
 
                         if(!is_object($oldMedia) || $oldMedia->contentId != $media->contentId) {
                             $this->MUSetBuffer('Media', $media);
-                            $newTitle = $media->metadata->title;
-                            if(isset($media->metadata->artist)) {
-                                $newTitle .= ' • ' . $media->metadata->artist;
-                            }
-                            $this->SetValue("Title", $newTitle);
+                            $this->SetValue("Artist", isset($media->metadata->artist) ? $media->metadata->artist : '-');
+                            $this->SetValue("Album", isset($media->metadata->album) ? $media->metadata->album : '-');
+                            $this->SetValue("Title", $media->metadata->title);
+                            $this->SetValue("Cover", isset($media->metadata->images) &&
+                                count($media->metadata->images) >= 1 &&
+                                isset($media->metadata->images[0]->url) ?
+                                    $media->metadata->images[0]->url : ''
+                            );
+                            $this->SetValue("Duration", isset($media->duration) ? $media->duration : 0);
+                            $this->SetValue("Position", 0);
                         }
                     }
 
-                    // state is updated everytime we receive a message, because it acts as trigger for the tracker
-                    $this->SetValue("State", $status->playerState);
+                    $state = 'stop';
+                    switch($status->playerState) {
+                        case 'PLAYING': $state = 'play'; break;
+                        case 'IDLE': $state = 'stop'; break;
+                        case 'BUFFERING': $state = 'prepare'; break;
+                        case 'PAUSED': $state = 'pause'; break;
 
-                    $this->MUSetBuffer('Tracker', [
-                        "position" => $status->currentTime,
-                        "timestamp" => microtime(true),
-                        "rate" => $status->playbackRate,
-                        "repeat" => $status->repeatMode,
-                        "state" => $status->playerState
-                    ]);
+                    }
+                    $this->SetValue("State", $state);
+
+                    $this->SetValue("Position", $status->currentTime);
                 }
             }
         } else {
@@ -205,7 +217,7 @@ class ChromecastDevice extends IPSModule
     public function RequestAction($ident, $value)
     {
         if($ident === 'Volume') {
-            $this->SetVolume($value);
+            $this->SetVolume(round($value/100));
         } else if($ident === 'TimerCallback') {
             if($value === 'PingTimer' && $this->GetValue("Connected")) {
                 $now = microtime(true);
@@ -232,11 +244,6 @@ class ChromecastDevice extends IPSModule
     //------------------------------------------------------------------------------------
     public function GetData() {
         $data = $this->MUGetBuffer('Application');
-        return json_encode(empty($data) ? null : $data);
-    }
-
-    public function GetTrackerData() {
-        $data = $this->MUGetBuffer('Tracker');
         return json_encode(empty($data) ? null : $data);
     }
 
@@ -372,7 +379,6 @@ class ChromecastDevice extends IPSModule
         if($media) {
             $this->SetValue("Title", '');
             $this->SetValue("State", '');
-            $this->MUSetBuffer("Tracker", '');
             $this->MUSetBuffer('Media', '');
             $this->MUSetBuffer('MediaSessionId', '');
         }
