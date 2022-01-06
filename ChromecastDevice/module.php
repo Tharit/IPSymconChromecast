@@ -28,7 +28,6 @@ class ChromecastDevice extends IPSModule
 
         // variables
         $this->RegisterVariableBoolean("Connected", "Connected");
-        $this->RegisterVariableString("Source", "Source");
         $this->RegisterVariableString("Application", "Application");
         $this->RegisterVariableString("State", "State");
         $this->RegisterVariableString("Artist", "Artist");
@@ -184,7 +183,7 @@ class ChromecastDevice extends IPSModule
                         if(!is_object($oldMedia) || $oldMedia->contentId != $media->contentId) {
                             $this->MUSetBuffer('Media', $media);
                             $this->SetValue("Artist", isset($media->metadata->artist) ? $media->metadata->artist : '-');
-                            $this->SetValue("Album", isset($media->metadata->album) ? $media->metadata->album : '-');
+                            $this->SetValue("Album", isset($media->metadata->albumName) ? $media->metadata->albumName : '-');
                             $this->SetValue("Title", $media->metadata->title);
                             $this->SetValue("Cover", isset($media->metadata->images) &&
                                 count($media->metadata->images) >= 1 &&
