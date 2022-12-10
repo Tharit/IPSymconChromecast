@@ -96,8 +96,16 @@ class ChromecastDevice extends IPSModule
         $data = json_decode($data);
         $data = utf8_decode($data->Buffer);
 
+        $data = $this->MUGetBuffer('Data') . $data;
+
         try {
             $c = new CastMessage();
+            if(!$c->isComplete($data)) {
+                $this->MUSetBuffer('Data', $data);
+                return;
+            } else {
+                $this->MUSetBuffer('Data', '');
+            }
             $c->decode($data);
         } catch (Exception $e) {
             return;
@@ -366,6 +374,7 @@ class ChromecastDevice extends IPSModule
     // module internals
     //------------------------------------------------------------------------------------
     private function ResetState($application = true, $media = true) {
+        $this->MUSetBuffer('Data', '');
         // reset app state
         if($application) {
             $this->MUSetBuffer("LastPongTimestamp", 0);

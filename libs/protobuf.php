@@ -76,6 +76,19 @@ class CastMessage {
 		return hex2bin($hexstring);
 	}
 
+	public function isComplete($message) {
+		if(strlen($message) < 4) {
+			return false;
+		}
+
+		$idx = 4;
+		$messageLen = unpack("N", $message)[1];
+
+		if(strlen($message) < $messageLen) return false;
+		
+		return true;
+	}
+
 	public function decode($message) {
 		$this->protocol_version = 0; // CASTV2_1_0 - It's always this
 		$this->source_id = ""; // Source ID String
