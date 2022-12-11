@@ -386,7 +386,11 @@ class ChromecastDevice extends IPSModule
         }
         if($media) {
             $this->SetValue("Title", '');
+            $this->SetValue("Album", '');
+            $this->SetValue("Artist", '');
+            $this->SetValue("Cover", '');
             $this->SetValue("State", 'stop');
+            $this->SetValue("Duration", 0);
             $this->MUSetBuffer('Media', '');
             $this->MUSetBuffer('MediaSessionId', '');
         }
