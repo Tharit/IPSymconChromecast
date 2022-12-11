@@ -386,7 +386,7 @@ class ChromecastDevice extends IPSModule
         }
         if($media) {
             $this->SetValue("Title", '');
-            $this->SetValue("State", '');
+            $this->SetValue("State", 'stop');
             $this->MUSetBuffer('Media', '');
             $this->MUSetBuffer('MediaSessionId', '');
         }
