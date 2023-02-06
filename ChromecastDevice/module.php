@@ -188,7 +188,8 @@ class ChromecastDevice extends IPSModule
                         $media = $status->media;
                         $oldMedia = $this->MUGetBuffer('Media');
 
-                        if(!is_object($oldMedia) || $oldMedia->contentId != $media->contentId) {
+                        if(isset($media->contentId) && isset($media->metadata) && (
+                            !is_object($oldMedia) || $oldMedia->contentId != $media->contentId)) {
                             $this->MUSetBuffer('Media', $media);
                             $this->SetValue("Artist", isset($media->metadata->artist) ? $media->metadata->artist : '-');
                             $this->SetValue("Album", isset($media->metadata->albumName) ? $media->metadata->albumName : '-');
@@ -209,11 +210,10 @@ class ChromecastDevice extends IPSModule
                         case 'IDLE': $state = 'stop'; break;
                         case 'BUFFERING': $state = 'prepare'; break;
                         case 'PAUSED': $state = 'pause'; break;
-
                     }
                     $this->SetValue("State", $state);
 
-                    $this->SetValue("Position", $status->currentTime);
+                    $this->SetValue("Position", isset($status->currentTime) ? $status->currentTime : 0);
                 }
             }
         } else {
